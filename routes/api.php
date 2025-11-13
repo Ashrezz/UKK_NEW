@@ -29,12 +29,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Ruang Routes
     Route::apiResource('ruang', RuangController::class);
     
+    // Peminjaman custom routes (must come before apiResource to match first)
+    Route::get('/peminjaman/jadwal/{date}', [PeminjamanController::class, 'getJadwalByDate']);
+    
     // Peminjaman Routes
     Route::apiResource('peminjaman', PeminjamanController::class);
-    
-    // Peminjaman custom routes
-    Route::get('/peminjaman/jadwal/{date}', [PeminjamanController::class, 'getJadwalByDate']);
-    Route::get('/peminjaman/{id}', [PeminjamanController::class, 'detail']);
 });
 
 // ==================== Other API Routes ====================
