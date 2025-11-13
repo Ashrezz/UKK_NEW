@@ -1,3 +1,6 @@
+[build]
+command = "npm ci --no-audit --prefer-offline && npm run build && composer install --no-dev --optimize-autoloader"
+
 [env]
 PORT = "8080"
 
