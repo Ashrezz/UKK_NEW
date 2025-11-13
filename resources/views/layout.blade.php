@@ -4,11 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Peminjaman Ruang</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
-    <link rel="stylesheet" href="{{ asset('css/layout-redesign.css') }}">
+    {{-- Built Tailwind/CSS via Vite --}}
+    @vite(['resources/css/layout-redesign.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen">
     @if(!request()->routeIs('login') && !request()->is('register'))
