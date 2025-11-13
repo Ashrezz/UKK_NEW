@@ -1,5 +1,17 @@
 [build]
-command = "rm -rf node_modules .npm 2>/dev/null; npm install --legacy-peer-deps --no-fund && npm run build && composer install --no-dev --optimize-autoloader"
+builder = "NIXPACKS"
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "php83", "composer"]
+
+[phases.install]
+cmds = [
+  "npm config set cache /tmp/npm-cache --global",
+  "mv node_modules node_modules_bak 2>/dev/null || true",
+  "npm install --legacy-peer-deps --no-fund --omit=dev",
+  "npm run build",
+  "composer install --no-dev --optimize-autoloader"
+]
 
 [env]
 PORT = "8080"
