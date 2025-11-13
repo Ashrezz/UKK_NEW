@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
 
 export default defineConfig({
-    // 👇 Pindahkan cache keluar dari node_modules
     cacheDir: './.vitecache',
 
     plugins: [
@@ -15,4 +14,15 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+
+    build: {
+        manifest: true,
+        outDir: 'public/build',
+        emptyOutDir: true,
+        rollupOptions: {
+            output: {
+                manualChunks: undefined,
+            },
+        },
+    },
 })

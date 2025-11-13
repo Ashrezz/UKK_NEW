@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Peminjaman Ruang</title>
     {{-- Built Tailwind/CSS via Vite --}}
-    @vite(['resources/css/layout-redesign.css', 'resources/js/app.js'])
+    @vite([
+    'resources/css/app.css',
+    'resources/css/layout-redesign.css',
+    'resources/js/app.js'
+])
+
 </head>
 <body class="min-h-screen">
     @if(!request()->routeIs('login') && !request()->is('register'))
