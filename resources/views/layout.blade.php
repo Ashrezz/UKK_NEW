@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ asset('css/layout-redesign.css') }}">
 </head>
 <body class="min-h-screen">
+    @if(!request()->routeIs('login') && !request()->is('register'))
     <!-- Mobile sidebar toggle (fixed) -->
     <button id="sidebarToggle" class="md:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow" aria-expanded="false">
         <svg class="h-6 w-6 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -64,11 +65,12 @@
             </div>
         @endauth
     </aside>
+    @endif
 
     <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-40 md:hidden"></div>
 
     <!-- Main -->
-    <main class="pt-20 md:pl-64">
+    <main class="@if(request()->routeIs('login') || request()->is('register')) w-full @else pt-20 md:pl-64 @endif">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @if(session('success'))
                 <div class="mb-4">
