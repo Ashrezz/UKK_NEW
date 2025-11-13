@@ -1,5 +1,5 @@
 [build]
-command = "rm -rf /app/node_modules/.cache 2>/dev/null; npm ci --no-fund --no-audit --force && npm run build && composer install --no-dev --optimize-autoloader"
+command = "rm -rf node_modules .npm 2>/dev/null; npm install --legacy-peer-deps --no-fund && npm run build && composer install --no-dev --optimize-autoloader"
 
 [env]
 PORT = "8080"

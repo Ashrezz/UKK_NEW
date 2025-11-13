@@ -5,6 +5,11 @@
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/layout-redesign.css": {
+    "file": "assets/layout-redesign-B6KE4biU.css",
+    "src": "resources/css/layout-redesign.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
     "file": "assets/app-CAiCLEjY.js",
     "name": "app",
