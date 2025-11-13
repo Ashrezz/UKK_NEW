@@ -31,13 +31,14 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Peminjaman Routes
     Route::apiResource('peminjaman', PeminjamanController::class);
+    
+    // Peminjaman custom routes
+    Route::get('/peminjaman/jadwal/{date}', [PeminjamanController::class, 'getJadwalByDate']);
+    Route::get('/peminjaman/{id}', [PeminjamanController::class, 'detail']);
 });
 
 // ==================== Other API Routes ====================
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-
-Route::get('/peminjaman/jadwal/{date}', [\App\Http\Controllers\PeminjamanController::class, 'getJadwalByDate']);
-Route::get('/peminjaman/{id}', [\App\Http\Controllers\PeminjamanController::class, 'detail']);
 
