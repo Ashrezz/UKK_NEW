@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Peminjaman extends Model
 {
+    use SoftDeletes;
     protected $table = 'peminjaman';
 
     protected $fillable = [
@@ -20,6 +23,8 @@ class Peminjaman extends Model
         'bukti_pembayaran',
         'status_pembayaran',
         'waktu_pembayaran',
+        'alasan_penolakan',
+        'dibatalkan_oleh',
     ];
 
     public function user()
@@ -30,5 +35,54 @@ class Peminjaman extends Model
     public function ruang()
     {
         return $this->belongsTo(Ruang::class, 'ruang_id');
+    }
+
+    /**
+     * Accessor to get a usable image src for bukti_pembayaran.
+     * - If the column contains raw binary image data (BLOB), it will return a data URI.
+     * - If the column contains a file path or URL, it will return a storage URL or the URL as-is.
+     * - Returns null when no image available.
+     *
+     * Usage: $peminjaman->bukti_pembayaran_src
+     */
+    public function getBuktiPembayaranSrcAttribute()
+    {
+        $value = $this->attributes['bukti_pembayaran'] ?? null;
+        if (!$value) {
+            return null;
+        }
+
+        // If it's already a full URL, return as-is
+        if (is_string($value) && preg_match('/^https?:\/\//', $value)) {
+            return $value;
+        }
+
+        // Normalize values that might include the public/ prefix
+        $storageKey = $value;
+        if (strpos($storageKey, 'public/') === 0) {
+            $storageKey = substr($storageKey, 7);
+        }
+
+        // Try a few possibilities on the public disk:
+        // 1) the value as-is (e.g. 'bukti_pembayaran/..' or 'somefile.png')
+        // 2) prefixed with bukti_pembayaran/ when value is just a filename
+        $candidates = [$storageKey];
+        if (basename($storageKey) === $storageKey) {
+            $candidates[] = 'bukti_pembayaran/' . $storageKey;
+        }
+
+        try {
+            foreach ($candidates as $candidate) {
+                if (Storage::disk('public')->exists($candidate)) {
+                    // Return a relative public path so it works regardless of APP_URL/host
+                    return '/storage/' . ltrim($candidate, '/');
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore and fallback
+        }
+
+        // Fallback: assume it's a path relative to storage/app/public
+        return asset('storage/' . ltrim($storageKey, '/'));
     }
 }

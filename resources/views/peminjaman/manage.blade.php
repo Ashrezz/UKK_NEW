@@ -1,111 +1,352 @@
 @extends('layout')
 
 @section('content')
-<div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+<!-- Modal Styles -->
+<style>
+    .modal-fade-enter {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    .modal-fade-enter-active {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 300ms, transform 300ms;
+    }
+    .modal-fade-exit {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .modal-fade-exit-active {
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 300ms, transform 300ms;
+    }
+    .modal-backdrop-enter {
+        opacity: 0;
+    }
+    .modal-backdrop-enter-active {
+        opacity: 1;
+        transition: opacity 300ms;
+    }
+    .modal-backdrop-exit {
+        opacity: 1;
+    }
+    .modal-backdrop-exit-active {
+        opacity: 0;
+        transition: opacity 300ms;
+    }
+</style>
+
+<div class="py-8">
     <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">
-                Kelola Peminjaman
-            </h2>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Daftar peminjaman yang menunggu persetujuan
-            </p>
+        <div class="card p-6 mb-6">
+            <h2 class="text-2xl font-semibold">Kelola Peminjaman</h2>
+            <p class="muted mt-1">Daftar peminjaman yang menunggu persetujuan dan verifikasi pembayaran</p>
+            <div class="mt-4">
+                <form method="POST" action="{{ route('peminjaman.cleanup') }}" onsubmit="return confirm('Jalankan cleanup? Semua booking yang tanggalnya lewat akan dihapus permanen.')">
+                    @csrf
+                    <button type="submit" class="btn-ghost">Jalankan Cleanup Jadwal Lama</button>
+                </form>
+            </div>
         </div>
 
-        <!-- Table Card -->
-        <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-700">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Ruang
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Tanggal
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Jam
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Peminjam
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Keperluan
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                Aksi
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        @foreach($peminjaman as $p)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                {{ $p->ruang->nama_ruang }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ $p->tanggal }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ $p->jam_mulai }} - {{ $p->jam_selesai }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {{ $p->user->name }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                <p class="max-w-xs overflow-hidden text-ellipsis">{{ $p->keperluan }}</p>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 flex items-center">
-                                <form method="POST" action="/peminjaman/{{ $p->id }}/approve">
-                                    @csrf
-                                    <button type="submit" 
-                                        class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium 
-                                        text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500
-                                        dark:bg-green-500 dark:hover:bg-green-600 transition-colors duration-200">
-                                        <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Setujui
-                                    </button>
-                                </form>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full table-auto border-collapse text-sm">
+                        <thead>
+                            <tr class="text-left text-xs text-muted uppercase tracking-wide">
+                                <th class="px-4 py-3">Ruang</th>
+                                <th class="px-4 py-3">Tanggal</th>
+                                <th class="px-4 py-3">Jam</th>
+                                <th class="px-4 py-3">Peminjam</th>
+                                <th class="px-4 py-3">Keperluan</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Bukti Bayar</th>
+                                <th class="px-4 py-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            @foreach($peminjaman as $p)
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-3 font-medium">{{ $p->ruang->nama_ruang }}</td>
+                                <td class="px-4 py-3 muted">{{ $p->tanggal }}</td>
+                                <td class="px-4 py-3 muted">{{ $p->jam_mulai }} - {{ $p->jam_selesai }}</td>
+                                <td class="px-4 py-3 muted">{{ $p->user->name }}</td>
+                                <td class="px-4 py-3 muted"><p class="max-w-xs overflow-hidden text-ellipsis">{{ $p->keperluan }}</p></td>
+                                <td class="px-4 py-3">
+                                    @if($p->status === 'pending')
+                                        <span class="badge" style="background:#fffbeb;color:#92400e;border:1px solid rgba(148,64,14,0.06)">Menunggu</span>
+                                    @elseif($p->status === 'approved' || $p->status === 'disetujui')
+                                        <span class="badge" style="background:#ecfdf5;color:#065f46;border:1px solid rgba(6,95,70,0.06)">Disetujui</span>
+                                    @elseif($p->status === 'rejected' || $p->status === 'ditolak')
+                                        <span class="badge" style="background:#fff1f2;color:#981b1b;border:1px solid rgba(152,27,27,0.06)">Ditolak</span>
+                                    @endif
 
-                                <form method="POST" action="/peminjaman/{{ $p->id }}/reject">
-                                    @csrf
-                                    <button type="submit"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium 
-                                        text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500
-                                        dark:bg-yellow-500 dark:hover:bg-yellow-600 transition-colors duration-200">
-                                        <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        Tolak
-                                    </button>
-                                </form>
+                                    @if($p->status_pembayaran === 'belum_bayar')
+                                        <div class="mt-2"><span class="badge" style="background:#f3f4f6;color:#374151;border:1px solid rgba(0,0,0,0.04)">Belum Bayar</span></div>
+                                    @elseif($p->status_pembayaran === 'menunggu_verifikasi')
+                                        <div class="mt-2"><span class="badge" style="background:#eff6ff;color:#1e3a8a;border:1px solid rgba(29,78,216,0.06)">Menunggu Verifikasi</span></div>
+                                    @elseif($p->status_pembayaran === 'terverifikasi' || $p->status_pembayaran === 'lunas')
+                                        <div class="mt-2"><span class="badge" style="background:#ecfdf5;color:#065f46;border:1px solid rgba(6,95,70,0.06)">Terverifikasi</span></div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if($p->bukti_pembayaran_src)
+                                        <button type="button" data-src="{{ $p->bukti_pembayaran_src }}" onclick="openModal(this.dataset.src)" class="btn-ghost inline-flex items-center">Lihat Bukti</button>
+                                    @else
+                                        <span class="muted">Belum ada bukti</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 flex items-center gap-2">
+                                    @if($p->status === 'pending' || $p->status_pembayaran === 'menunggu_verifikasi')
+                                        <form method="POST" action="{{ $p->status === 'pending' ? url('/peminjaman/' . $p->id . '/approve') : route('pembayaran.verifikasi', $p->id) }}">
+                                            @csrf
+                                            <button type="submit" class="btn-primary inline-flex items-center">{{ $p->status === 'pending' ? 'Setujui' : 'Verifikasi' }}</button>
+                                        </form>
 
-                                <form method="POST" action="/peminjaman/{{ $p->id }}" 
-                                    onsubmit="return confirm('Yakin hapus booking ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium 
-                                        text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500
-                                        dark:bg-red-500 dark:hover:bg-red-600 transition-colors duration-200">
-                                        <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        Hapus
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                        @if($p->status === 'pending')
+                                            <button type="button" data-id="{{ $p->id }}" data-name="{{ $p->user->name }}" class="btn-ghost text-yellow-700 open-reject-modal">Tolak</button>
+                                        @endif
+                                    @endif
+
+                                    <form method="POST" action="/peminjaman/{{ $p->id }}" onsubmit="return confirm('Yakin hapus booking ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-ghost text-red-600">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </div>
+</div>
+<!-- Modal -->
+<div id="imageModal" class="fixed inset-0 z-50 hidden overflow-y-auto overflow-x-hidden">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" id="modalBackdrop"></div>
+    
+    <!-- Modal Content -->
+    <div class="flex min-h-screen items-center justify-center p-4">
+    <div id="modalContent" class="relative max-w-2xl w-full bg-white rounded-lg shadow-lg transform transition-all">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-black">
+                    Bukti Pembayaran
+                </h3>
+                <button onclick="closeModal()" class="text-black/60 hover:text-black/80">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6">
+                <div class="flex justify-center">
+                    <img id="modalImage" src="" alt="Bukti Pembayaran" 
+                        class="max-w-full max-h-[70vh] rounded-lg shadow-lg object-contain">
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-gray-200 flex justify-end space-x-2">
+                    <button onclick="window.open(document.getElementById('modalImage').src, '_blank')" 
+                        class="px-4 py-2 text-sm font-medium text-black/70 hover:text-black transition-colors">
+                        Buka di Tab Baru
+                    </button>
+                    <button onclick="closeModal()" 
+                        class="px-4 py-2 text-sm font-medium btn-danger rounded-md transition-shadow duration-200">
+                        Tutup
+                    </button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function openModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalContent = document.getElementById('modalContent');
+        const backdrop = document.getElementById('modalBackdrop');
+        const modalImage = document.getElementById('modalImage');
+        
+        // Set image source
+        modalImage.src = imageSrc;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+    // Add animation classes (guarded)
+    if (backdrop) backdrop.classList.add('modal-backdrop-enter');
+    if (modalContent) modalContent.classList.add('modal-fade-enter');
+        
+    // Force reflow (guarded)
+    if (backdrop) void backdrop.offsetHeight;
+    if (modalContent) void modalContent.offsetHeight;
+        
+        // Start animation
+    if (backdrop) backdrop.classList.add('modal-backdrop-enter-active');
+    if (modalContent) modalContent.classList.add('modal-fade-enter-active');
+        
+        // Remove animation classes
+        setTimeout(() => {
+            if (backdrop) backdrop.classList.remove('modal-backdrop-enter', 'modal-backdrop-enter-active');
+            if (modalContent) modalContent.classList.remove('modal-fade-enter', 'modal-fade-enter-active');
+        }, 300);
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        const modalContent = document.getElementById('modalContent');
+        const backdrop = document.getElementById('modalBackdrop');
+
+        // Add exit animation classes (guarded)
+        if (backdrop) backdrop.classList.add('modal-backdrop-exit');
+        if (modalContent) modalContent.classList.add('modal-fade-exit');
+
+        // Force reflow
+        if (backdrop) void backdrop.offsetHeight;
+        if (modalContent) void modalContent.offsetHeight;
+
+        // Start exit animation
+        if (backdrop) backdrop.classList.add('modal-backdrop-exit-active');
+        if (modalContent) modalContent.classList.add('modal-fade-exit-active');
+        
+        // Hide modal after animation
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            if (backdrop) backdrop.classList.remove('modal-backdrop-exit', 'modal-backdrop-exit-active');
+            if (modalContent) modalContent.classList.remove('modal-fade-exit', 'modal-fade-exit-active');
+        }, 300);
+    }
+    
+    // Close modal when clicking backdrop (guarded)
+    const _backdrop = document.getElementById('modalBackdrop');
+    if (_backdrop) _backdrop.addEventListener('click', closeModal);
+
+    // Prevent closing when clicking modal content (guarded)
+    const _modalContent = document.getElementById('modalContent');
+    if (_modalContent) _modalContent.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('imageModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        }
+    });
+</script>
+<!-- Reject Modal -->
+<!-- Reject Modal (floating like Bukti Pembayaran) -->
+<div id="rejectModal" class="fixed inset-0 z-50 hidden overflow-y-auto overflow-x-hidden">
+    <!-- Backdrop -->
+    <div id="rejectBackdrop" class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+
+    <!-- Modal Content -->
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div id="rejectContent" class="relative max-w-2xl w-full bg-white rounded-lg shadow-lg transform transition-all">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-black">Tolak Pengajuan</h3>
+                <button onclick="closeRejectModal()" class="text-black/60 hover:text-black/80">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6">
+                <form id="rejectForm" method="POST" action="">
+                    @csrf
+                    <div class="mb-4">
+                        <label for="alasan_penolakan" class="block text-sm font-medium text-black">Keterangan Penolakan</label>
+                        <textarea id="alasan_penolakan" name="alasan_penolakan" rows="6" class="mt-1 block w-full rounded-md border border-gray-300 text-black placeholder-black/50" placeholder="Jelaskan alasan penolakan..."></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-gray-200 flex justify-end space-x-2">
+                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 text-sm font-medium text-black/70 hover:text-black transition-colors">Batal</button>
+                    <button type="button" onclick="submitRejectForm()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors">Kirim & Tolak</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const rejectModalEl = document.getElementById('rejectModal');
+    const rejectBackdropEl = document.getElementById('rejectBackdrop');
+    const rejectContentEl = document.getElementById('rejectContent');
+
+    function openRejectModal(id) {
+        const form = document.getElementById('rejectForm');
+        form.action = '/peminjaman/' + id + '/reject';
+
+        // show modal
+        rejectModalEl.classList.remove('hidden');
+
+        // animation in
+        if (rejectBackdropEl) rejectBackdropEl.classList.add('modal-backdrop-enter');
+        if (rejectContentEl) rejectContentEl.classList.add('modal-fade-enter');
+        if (rejectBackdropEl) void rejectBackdropEl.offsetHeight;
+        if (rejectContentEl) void rejectContentEl.offsetHeight;
+        if (rejectBackdropEl) rejectBackdropEl.classList.add('modal-backdrop-enter-active');
+        if (rejectContentEl) rejectContentEl.classList.add('modal-fade-enter-active');
+
+        // prevent background scroll
+        document.documentElement.classList.add('overflow-hidden');
+
+        // focus textarea
+        setTimeout(() => {
+            const ta = document.getElementById('alasan_penolakan');
+            if (ta) ta.focus();
+        }, 150);
+    }
+
+    function closeRejectModal() {
+        if (rejectBackdropEl) rejectBackdropEl.classList.add('modal-backdrop-exit');
+        if (rejectContentEl) rejectContentEl.classList.add('modal-fade-exit');
+        if (rejectBackdropEl) void rejectBackdropEl.offsetHeight;
+        if (rejectContentEl) void rejectContentEl.offsetHeight;
+        if (rejectBackdropEl) rejectBackdropEl.classList.add('modal-backdrop-exit-active');
+        if (rejectContentEl) rejectContentEl.classList.add('modal-fade-exit-active');
+
+        setTimeout(() => {
+            rejectModalEl.classList.add('hidden');
+            if (rejectBackdropEl) rejectBackdropEl.classList.remove('modal-backdrop-enter', 'modal-backdrop-enter-active', 'modal-backdrop-exit', 'modal-backdrop-exit-active');
+            if (rejectContentEl) rejectContentEl.classList.remove('modal-fade-enter', 'modal-fade-enter-active', 'modal-fade-exit', 'modal-fade-exit-active');
+            document.documentElement.classList.remove('overflow-hidden');
+            const ta = document.getElementById('alasan_penolakan'); if (ta) ta.value = '';
+        }, 300);
+    }
+
+    function submitRejectForm() {
+        const form = document.getElementById('rejectForm');
+        if (!form) return;
+        form.submit();
+    }
+
+    // delegated click to open modal
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.open-reject-modal');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.dataset.id;
+        if (id) openRejectModal(id);
+    });
+
+    // backdrop click closes
+    if (rejectBackdropEl) rejectBackdropEl.addEventListener('click', closeRejectModal);
+
+    // close on escape
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { if (!rejectModalEl.classList.contains('hidden')) closeRejectModal(); } });
+</script>
 @endsection

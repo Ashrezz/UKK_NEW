@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Run cleanup of old peminjaman daily at 00:05
+        $schedule->command('peminjaman:cleanup')->dailyAt('00:05');
     }
 
     /**

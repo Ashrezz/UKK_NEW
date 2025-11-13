@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
 
+// Info Pengajuan (kebijakan pembayaran/refund)
+Route::get('/info-pengajuan', function () { return view('info-pengajuan'); })->name('info-pengajuan');
+
 // Login & Register
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -27,13 +30,23 @@ Route::middleware('auth')->group(function () {
 // Admin/Petugas
 Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);
-    Route::post('/ruang', [RuangController::class, 'store']);
-    Route::delete('/ruang/{id}', [RuangController::class, 'destroy']);
+    // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
+    // Manual cleanup trigger (admin or petugas)
+    Route::post('/peminjaman/cleanup', [PeminjamanController::class, 'cleanup'])->name('peminjaman.cleanup');
+    Route::post('/peminjaman/{id}/restore', [PeminjamanController::class, 'restore'])->name('peminjaman.restore');
+    Route::delete('/peminjaman/{id}/force', [PeminjamanController::class, 'forceDelete'])->name('peminjaman.forceDelete');
     Route::post('/peminjaman/{id}/approve', [PeminjamanController::class, 'approve'])->name('peminjaman.approve');
     Route::post('/peminjaman/{id}/reject', [PeminjamanController::class, 'reject'])->name('peminjaman.reject');
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy']);
     Route::get('/api/peminjaman/{id}', [PeminjamanController::class, 'detail']);
+});
+
+// Admin only: Room Management
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::post('/ruang', [RuangController::class, 'store']);
+    Route::delete('/ruang/{id}', [RuangController::class, 'destroy']);
+    // peminjaman manage routes moved to admin+petugas group
 
     // Payment verification routes
     Route::get('/pembayaran/verifikasi', [PembayaranController::class, 'verifikasiIndex'])->name('pembayaran.verifikasi.index');

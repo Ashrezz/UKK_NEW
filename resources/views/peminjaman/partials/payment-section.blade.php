@@ -4,41 +4,27 @@
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Rincian Biaya</h4>
-                <div class="space-y-4">
+            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4 bg-white dark:bg-gray-800">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Rincian Biaya</h4>
+
+                <div class="grid grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
                     <div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-gray-500 dark:text-gray-400">Biaya per jam:</span>
-                            <span class="font-medium text-gray-900 dark:text-white">Rp 50.000</span>
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            *Termasuk fasilitas ruangan dan peralatan dasar
-                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Tarif per jam</p>
+                        <p id="rateDisplay" class="font-medium mt-1">-</p>
                     </div>
-                    
                     <div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-gray-500 dark:text-gray-400">Durasi:</span>
-                            <span class="font-medium text-gray-900 dark:text-white" id="durasi">-</span>
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            *Tidak termasuk jam istirahat (12:00-13:00)
-                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Durasi</p>
+                        <p id="durationDisplay" class="font-medium mt-1">-</p>
                     </div>
 
-                    <div class="pt-3 border-t border-gray-200 dark:border-gray-600">
-                        <div class="flex justify-between items-baseline">
-                            <span class="font-medium text-gray-900 dark:text-white">Total Biaya:</span>
-                            <div class="text-right">
-                                <span class="block font-bold text-lg text-gray-900 dark:text-white" id="totalBiaya">Rp 0</span>
-                                <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    *Harga sudah termasuk pajak
-                                </span>
-                            </div>
-                        </div>
+                    <div class="col-span-2">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Total Biaya</p>
+                        <p id="totalDisplay" class="font-semibold text-lg text-blue-600 dark:text-blue-400 mt-1">-</p>
                     </div>
                 </div>
+
+                <!-- Hidden input untuk dikirim ke server -->
+                <input type="hidden" name="biaya" value="0" />
             </div>            <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Upload Bukti Pembayaran
@@ -75,129 +61,132 @@
     </div>
 </div>
 
+{{-- Remove duplicate/old scripts and replace with a single realtime script --}}
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const jamMulaiInput = document.querySelector('input[name="jam_mulai"]');
-    const jamSelesaiInput = document.querySelector('input[name="jam_selesai"]');
-    const durasiElement = document.getElementById('durasi');
-    const totalBiayaElement = document.getElementById('totalBiaya');
-    const BIAYA_PER_JAM = 50000;
+document.addEventListener('DOMContentLoaded', function () {
+    const RATE_PER_HOUR = 50000;
+    const jamMulai = document.querySelector('input[name="jam_mulai"]');
+    const jamSelesai = document.querySelector('input[name="jam_selesai"]');
+    const rateEl = document.getElementById('rateDisplay');
+    const durationEl = document.getElementById('durationDisplay');
+    const totalEl = document.getElementById('totalDisplay');
+    const biayaInput = document.querySelector('input[name="biaya"]');
 
-    function calculateDuration(startTime, endTime) {
-        const mulai = new Date(`2000-01-01T${startTime}`);
-        const selesai = new Date(`2000-01-01T${endTime}`);
-        
-        // Jika waktu selesai lebih kecil dari waktu mulai, berarti melewati tengah malam
-        if (selesai < mulai) {
-            selesai.setDate(selesai.getDate() + 1);
-        }
+    if (rateEl) rateEl.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(RATE_PER_HOUR) + ' / jam';
 
-        // Hitung durasi dalam milidetik dan konversi ke jam
-        let durasiJam = (selesai - mulai) / (1000 * 60 * 60);
-
-        // Kurangi waktu istirahat (12:00-13:00) jika peminjaman melewati jam tersebut
-        const mulaiHour = mulai.getHours();
-        const selesaiHour = selesai.getHours();
-        
-        if (mulaiHour < 13 && selesaiHour >= 13) {
-            durasiJam -= 1; // Kurangi 1 jam untuk waktu istirahat
-        }
-
-        return Math.max(0, Math.ceil(durasiJam));
+    function formatIDR(v) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v);
     }
 
-    function formatRupiah(angka) {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(angka);
+    function toMinutes(timeStr) {
+        if (!timeStr) return null;
+        const parts = timeStr.split(':');
+        if (parts.length < 2) return null;
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) return null;
+        return h * 60 + m;
     }
 
-    function validateTimeRange() {
-        if (!jamMulaiInput.value || !jamSelesaiInput.value) return false;
+    function calculate(startMin, endMin) {
+        // end must be after start (allow crossing midnight)
+        if (startMin == null || endMin == null) return null;
+        let end = endMin;
+        if (end <= startMin) {
+            // treat as next day
+            end = end + 24 * 60;
+        }
+        let minutes = end - startMin;
+        if (minutes <= 0) return 0;
 
-        const mulaiHour = parseInt(jamMulaiInput.value.split(':')[0]);
-        const selesaiHour = parseInt(jamSelesaiInput.value.split(':')[0]);
-
-        // Validasi jam operasional (08:00-17:00)
-        if (mulaiHour < 8 || mulaiHour >= 17 || selesaiHour < 8 || selesaiHour > 17) {
-            alert('Jam operasional ruangan adalah 08:00-17:00');
-            return false;
+        // subtract lunch break 12:00-13:00 if interval covers it
+        const lunchStart = 12 * 60;
+        const lunchEnd = 13 * 60;
+        // check coverage on timeline possibly extended beyond midnight
+        // check every hour in range for overlap with lunch window (single day)
+        const realStart = startMin;
+        const realEnd = end;
+        // if original interval (in minutes timeline) intersects lunch window (12:00-13:00)
+        // we only subtract 60 if overlap exists
+        const overlapStart = Math.max(realStart, lunchStart);
+        const overlapEnd = Math.min(realEnd, lunchEnd);
+        if (overlapEnd > overlapStart) {
+            minutes -= (overlapEnd - overlapStart);
         }
 
-        // Validasi waktu istirahat
-        if ((mulaiHour === 12) || (selesaiHour === 12)) {
-            alert('Tidak dapat meminjam pada jam istirahat (12:00-13:00)');
-            return false;
-        }
-
-        return true;
+        return Math.max(0, minutes / 60); // duration in hours (decimal)
     }
 
-    function updateBiaya() {
-        if (!jamMulaiInput.value || !jamSelesaiInput.value) {
-            durasiElement.textContent = '-';
-            totalBiayaElement.textContent = formatRupiah(0);
+    function update() {
+        const startMin = toMinutes(jamMulai?.value);
+        const endMin = toMinutes(jamSelesai?.value);
+
+        if (startMin == null || endMin == null) {
+            if (durationEl) durationEl.textContent = '-';
+            if (totalEl) totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
             return;
         }
 
-        if (!validateTimeRange()) {
-            jamMulaiInput.value = '';
-            jamSelesaiInput.value = '';
+        // basic operational-hour validation (08:00 - 17:00)
+        const startHour = parseInt(jamMulai.value.split(':')[0], 10);
+        const endHour = parseInt(jamSelesai.value.split(':')[0], 10);
+        if (isNaN(startHour) || isNaN(endHour)) {
+            if (durationEl) durationEl.textContent = '-';
+            if (totalEl) totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
             return;
         }
 
-        const durasi = calculateDuration(jamMulaiInput.value, jamSelesaiInput.value);
-        
-        if (durasi > 0) {
-            const biaya = durasi * BIAYA_PER_JAM;
-            durasiElement.textContent = `${durasi} jam`;
-            totalBiayaElement.textContent = formatRupiah(biaya);
+        // compute duration hours (decimal)
+        const hours = calculate(startMin, endMin);
 
-            // Validasi maksimal peminjaman
-            if (durasi > 8) {
-                alert('Maksimal peminjaman adalah 8 jam per hari');
-                jamSelesaiInput.value = '';
-                updateBiaya();
-            }
-        } else {
-            durasiElement.textContent = '-';
-            totalBiayaElement.textContent = formatRupiah(0);
-            
-            if (jamMulaiInput.value && jamSelesaiInput.value) {
-                alert('Waktu selesai harus lebih besar dari waktu mulai');
-                jamSelesaiInput.value = '';
-            }
+        if (hours === 0) {
+            durationEl.textContent = 'Waktu selesai harus setelah mulai';
+            totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
+            return;
         }
+
+        // validate operating hours and lunch (no alerts to keep realtime UX)
+        if (startHour < 8 || startHour >= 17 || endHour < 8 || endHour > 17) {
+            durationEl.textContent = 'Jam operasional: 08:00 - 17:00';
+            totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
+            return;
+        }
+        if ((startHour === 12) || (endHour === 12)) {
+            durationEl.textContent = 'Tidak dapat meminjam pada jam istirahat (12:00-13:00)';
+            totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
+            return;
+        }
+
+        // limit max 8 hours
+        if (hours > 8) {
+            durationEl.textContent = 'Maksimal peminjaman 8 jam';
+            totalEl.textContent = formatIDR(0);
+            if (biayaInput) biayaInput.value = 0;
+            return;
+        }
+
+        // show duration with up to 2 decimals
+        const hoursDisplay = Math.round(hours * 100) / 100;
+        const total = Math.round(hours * RATE_PER_HOUR);
+
+        durationEl.textContent = `${hoursDisplay} jam`;
+        totalEl.textContent = formatIDR(total);
+        if (biayaInput) biayaInput.value = total;
     }
 
-    // Event Listeners
-    jamMulaiInput.addEventListener('change', updateBiaya);
-    jamSelesaiInput.addEventListener('change', updateBiaya);
-
-    // Preview uploaded image
-    const input = document.getElementById('bukti_pembayaran');
-    input.addEventListener('change', function(e) {
-        if (e.target.files && e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.createElement('img');
-                preview.src = e.target.result;
-                preview.classList.add('mt-2', 'rounded-lg', 'max-h-48', 'mx-auto');
-                
-                const container = input.closest('div').querySelector('img');
-                if (container) {
-                    container.replaceWith(preview);
-                } else {
-                    input.closest('div').appendChild(preview);
-                }
-            }
-            reader.readAsDataURL(e.target.files[0]);
-        }
+    ['input','change'].forEach(evt => {
+        if (jamMulai) jamMulai.addEventListener(evt, update);
+        if (jamSelesai) jamSelesai.addEventListener(evt, update);
     });
+
+    // init
+    update();
 });
 </script>
 @endpush

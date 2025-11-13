@@ -10,8 +10,8 @@ class Ruang extends Model
 
     protected $fillable = [
         'nama_ruang',
-        'deskripsi',
         'kapasitas',
+        'lokasi'
     ];
 
     public function peminjaman()

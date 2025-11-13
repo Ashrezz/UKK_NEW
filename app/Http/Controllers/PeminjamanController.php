@@ -100,7 +100,13 @@ class PeminjamanController extends Controller
             ->get();
 
         // Organize bookings by day and time slot
+        $today = now()->format('Y-m-d');
         foreach ($weeklyBookings as $booking) {
+            // Skip bookings that are already approved and scheduled after today
+            if ($booking->status === 'disetujui' && $booking->tanggal > $today) {
+                continue;
+            }
+
             $day = $this->getDayInIndonesian(date('l', strtotime($booking->tanggal)));
             $timeSlot = substr($booking->jam_mulai, 0, 5) . '-' . substr($booking->jam_selesai, 0, 5);
             
@@ -113,6 +119,7 @@ class PeminjamanController extends Controller
             }
             
             $regularSchedule[$day][$timeSlot][] = [
+                'tanggal' => $booking->tanggal,
                 'ruang' => $booking->ruang->nama_ruang,
                 'user' => $booking->user->name,
                 'status' => $booking->status,
@@ -157,10 +164,26 @@ class PeminjamanController extends Controller
             }
         }
 
+        // Transform regularSchedule into jadwalReguler format for the view
+        $jadwalReguler = [];
+        foreach ($regularSchedule as $day => $slots) {
+            foreach ($slots as $timeSlot => $bookings) {
+                foreach ($bookings as $booking) {
+                    $jadwalReguler[] = [
+                        'hari' => $day,
+                        'tanggal' => $booking['tanggal'],
+                        'jam' => $timeSlot,
+                        'ruang' => $booking['ruang']
+                    ];
+                }
+            }
+        }
+
         return view('peminjaman.create', [
-            'ruangList' => $ruangList,
+            'ruangs' => $ruangList,
             'selectedRuang' => $selectedRuang,
             'regularSchedule' => $regularSchedule,
+            'jadwalReguler' => $jadwalReguler,
             'timeSlots' => $this->timeSlots,
             'daysOfWeek' => $this->daysOfWeek,
             'bookedTimeSlots' => $bookedTimeSlots
@@ -176,14 +199,20 @@ class PeminjamanController extends Controller
 
         $request->validate([
             'ruang_id' => 'required',
-            'tanggal' => 'required|date',
+            'tanggal' => 'required|date|after_or_equal:today',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'keperluan' => 'required',
             'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048'
         ], [
-            'bukti_pembayaran.required' => 'Bukti pembayaran harus diunggah berupa file gambar (jpg, png)'
+            'bukti_pembayaran.required' => 'Bukti pembayaran harus diunggah berupa file gambar (jpg, png)',
+            'tanggal.after_or_equal' => 'Tanggal peminjaman tidak boleh sebelum hari ini.'
         ]);
+
+        // Additional validation: jam_selesai must be after jam_mulai
+        if (strtotime($request->jam_selesai) <= strtotime($request->jam_mulai)) {
+            return back()->withErrors(['jam_selesai' => 'Jam selesai harus lebih besar dari jam mulai.'])->withInput();
+        }
 
         // Cek apakah ruang sudah dibooking pada waktu yang sama dan statusnya belum selesai
         $bentrok = Peminjaman::where('ruang_id', $request->ruang_id)
@@ -220,11 +249,13 @@ class PeminjamanController extends Controller
 
         if ($request->hasFile('bukti_pembayaran')) {
             $file = $request->file('bukti_pembayaran');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('public/bukti_pembayaran', $filename);
+
+            // Store the uploaded file in the public disk under bukti_pembayaran
+            // This keeps files in storage/app/public/bukti_pembayaran and allows serving via /storage
+            $path = $file->store('bukti_pembayaran', 'public');
 
             $peminjaman->update([
-                'bukti_pembayaran' => $filename,
+                'bukti_pembayaran' => $path, // stores like 'bukti_pembayaran/filename.jpg'
                 'status_pembayaran' => 'menunggu_verifikasi',
                 'waktu_pembayaran' => now()
             ]);
@@ -235,7 +266,11 @@ class PeminjamanController extends Controller
 
     public function jadwal()
     {
-        $jadwal = Peminjaman::with('ruang', 'user')->get();
+        // Use pagination to avoid loading too many records at once and hitting execution limits
+        $jadwal = Peminjaman::with('ruang', 'user')
+            ->orderBy('tanggal', 'desc')
+            ->paginate(50);
+
         return view('peminjaman.jadwal', compact('jadwal'));
     }
 
@@ -261,20 +296,46 @@ class PeminjamanController extends Controller
     public function approve($id)
     {
         $pinjam = Peminjaman::findOrFail($id);
-        
-        if ($pinjam->status_pembayaran !== 'lunas') {
-            return back()->with('error', 'Pembayaran harus diverifikasi terlebih dahulu sebelum menyetujui peminjaman.');
-        }
-        
-        $pinjam->update(['status' => 'disetujui']);
-        return back()->with('success', 'Peminjaman disetujui');
+        // When approving, also mark the payment as verified
+        $pinjam->update([
+            'status' => 'disetujui',
+            'status_pembayaran' => 'terverifikasi',
+            'waktu_pembayaran' => $pinjam->waktu_pembayaran ?? now()
+        ]);
+
+        return back()->with('success', 'Peminjaman disetujui dan pembayaran ditandai terverifikasi');
     }
 
-    public function reject($id)
+    public function reject(Request $request, $id)
     {
         $pinjam = Peminjaman::findOrFail($id);
-        $pinjam->update(['status' => 'ditolak']);
-        return back()->with('success', 'Peminjaman ditolak');
+
+        $request->validate([
+            'alasan_penolakan' => 'nullable|string|max:2000'
+        ]);
+
+        $role = auth()->user()->role ?? null;
+        $dibatalkanOleh = in_array($role, ['admin','petugas']) ? $role : 'user';
+
+        $pinjam->update([
+            'status' => 'ditolak',
+            'status_pembayaran' => 'terverifikasi',
+            'waktu_pembayaran' => $pinjam->waktu_pembayaran ?? now(),
+            'alasan_penolakan' => $request->input('alasan_penolakan'),
+            'dibatalkan_oleh' => $dibatalkanOleh,
+        ]);
+
+        return back()->with('success', 'Peminjaman ditolak. Keterangan telah disimpan.');
+    }
+
+    public function getJadwalByDate($date)
+    {
+        $peminjaman = Peminjaman::with(['ruang', 'user'])
+            ->where('tanggal', $date)
+            ->whereIn('status', ['pending', 'disetujui'])
+            ->get();
+        
+        return response()->json($peminjaman);
     }
 
     public function detail($id)
@@ -284,10 +345,73 @@ class PeminjamanController extends Controller
         return response()->json($peminjaman);
     }
 
+    /**
+     * Restore a soft-deleted peminjaman (admin/petugas)
+     */
+    public function restore($id)
+    {
+        $p = Peminjaman::withTrashed()->findOrFail($id);
+        if ($p->trashed()) {
+            $p->restore();
+            return back()->with('success', 'Booking berhasil dikembalikan (restore).');
+        }
+        return back()->with('error', 'Booking tidak dalam status terhapus.');
+    }
+
+    /**
+     * Permanently delete a peminjaman (force delete). Admin only.
+     */
+    public function forceDelete($id)
+    {
+        $p = Peminjaman::withTrashed()->findOrFail($id);
+        try {
+            // attempt to delete associated file if present
+            if (!empty($p->bukti_pembayaran) && \Illuminate\Support\Facades\Storage::disk('public')->exists($p->bukti_pembayaran)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($p->bukti_pembayaran);
+            }
+        } catch (\Throwable $e) {
+            // ignore file delete errors
+        }
+        $p->forceDelete();
+        return back()->with('success', 'Booking dihapus permanen.');
+    }
+
     public function destroy($id)
     {
         $pinjam = Peminjaman::findOrFail($id);
         $pinjam->delete();
         return back()->with('success', 'Booking berhasil dihapus');
+    }
+
+    /**
+     * Manual cleanup: delete peminjaman with tanggal before today. Accessible to admin/petugas.
+     */
+    public function cleanup()
+    {
+        $today = now()->format('Y-m-d');
+        $old = Peminjaman::where('tanggal', '<', $today)->get();
+        $count = 0;
+        $ids = [];
+
+        foreach ($old as $p) {
+            try {
+                $p->delete(); // soft-delete
+                $ids[] = $p->id;
+                $count++;
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // Log cleanup
+        try {
+            $logPath = storage_path('logs/peminjaman_cleanup.log');
+            $message = '[' . now()->toDateTimeString() . '] Manual cleanup. Soft-deleted: ' . $count . '. IDs: ' . implode(',', $ids) . PHP_EOL;
+            file_put_contents($logPath, $message, FILE_APPEND | LOCK_EX);
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return back()->with('success', "Cleanup selesai. Soft-deleted {$count} booking lama.");
     }
 }

@@ -56,8 +56,9 @@ class PembayaranController extends Controller
         $peminjaman = Peminjaman::findOrFail($id);
 
         $peminjaman->update([
-            'status_pembayaran' => 'lunas',
-            'status' => 'disetujui'
+            'status_pembayaran' => 'terverifikasi',
+            'status' => 'disetujui',
+            'waktu_pembayaran' => $peminjaman->waktu_pembayaran ?? now()
         ]);
 
         return back()->with('success', 'Pembayaran telah diverifikasi dan peminjaman disetujui.');
