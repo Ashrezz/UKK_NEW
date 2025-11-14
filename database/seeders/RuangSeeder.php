@@ -12,7 +12,6 @@ class RuangSeeder extends Seeder
         Ruang::create([
             'nama_ruang' => 'Ruang Bioskop',
             'deskripsi' => 'Ruang untuk nonton bareng',
-            'kapasitas' => 100,
         ]);
     }
 }
