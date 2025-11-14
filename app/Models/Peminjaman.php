@@ -21,6 +21,10 @@ class Peminjaman extends Model
         'status',
         'biaya',
         'bukti_pembayaran',
+    'bukti_pembayaran_blob',
+    'bukti_pembayaran_mime',
+    'bukti_pembayaran_name',
+    'bukti_pembayaran_size',
         'status_pembayaran',
         'waktu_pembayaran',
         'alasan_penolakan',
@@ -48,6 +52,11 @@ class Peminjaman extends Model
      */
     public function getBuktiPembayaranSrcAttribute()
     {
+        // If a BLOB exists, prefer the blob-serving route
+        if (!empty($this->attributes['bukti_pembayaran_blob'])) {
+            return route('pembayaran.bukti.blob', ['id' => $this->id]);
+        }
+
         $value = $this->attributes['bukti_pembayaran'] ?? null;
         if (!$value) {
             return null;
@@ -77,6 +86,12 @@ class Peminjaman extends Model
 
         try {
             foreach ($candidates as $candidate) {
+                // If a publicly accessible copy exists under public/bukti_pembayaran, return that URL
+                $publicCandidate = public_path('bukti_pembayaran/' . basename($candidate));
+                if (file_exists($publicCandidate)) {
+                    return asset('bukti_pembayaran/' . basename($candidate));
+                }
+
                 if (Storage::disk($disk)->exists($candidate)) {
                     // Serve via controller route so it works for both local and S3
                     return route('pembayaran.bukti', ['filename' => basename($candidate)]);
@@ -91,7 +106,7 @@ class Peminjaman extends Model
             // For S3, return a path that the route will handle
             return route('pembayaran.bukti', ['filename' => basename($storageKey)]);
         }
-        
+
         return asset('storage/' . ltrim($storageKey, '/'));
     }
 }

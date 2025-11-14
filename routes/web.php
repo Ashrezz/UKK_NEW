@@ -45,6 +45,7 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
 
     // Serve bukti pembayaran files through Laravel (works even if public/storage symlink is missing)
     Route::get('/pembayaran/bukti/{filename}', [\App\Http\Controllers\PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
+    Route::get('/pembayaran/bukti/blob/{id}', [\App\Http\Controllers\PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
 });
 
 // Admin only: Room Management
