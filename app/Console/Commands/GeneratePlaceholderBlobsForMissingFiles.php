@@ -44,9 +44,9 @@ class GeneratePlaceholderBlobsForMissingFiles extends Command
             try {
                 // Generate a simple placeholder PNG image (1x1 transparent pixel as fallback, or a larger colored image)
                 $placeholder = $this->generatePlaceholderImage();
-                
+
                 $filename = basename($peminjaman->bukti_pembayaran ?? 'bukti.png');
-                
+
                 $peminjaman->bukti_pembayaran_blob = $placeholder;
                 $peminjaman->bukti_pembayaran_mime = 'image/png';
                 $peminjaman->bukti_pembayaran_name = $filename;
@@ -77,7 +77,7 @@ class GeneratePlaceholderBlobsForMissingFiles extends Command
     {
         // Create a GD image resource
         $image = imagecreatetruecolor(200, 200);
-        
+
         // Colors
         $bgColor = imagecolorallocate($image, 200, 200, 200);      // Light gray background
         $textColor = imagecolorallocate($image, 100, 100, 100);    // Dark gray text
@@ -92,7 +92,7 @@ class GeneratePlaceholderBlobsForMissingFiles extends Command
         // Add text
         $fontPath = __DIR__ . '/../../resources/fonts/';
         $text = "No Image\nProvided";
-        
+
         // Use simple text (built-in font 2)
         imagestring($image, 2, 50, 90, "No Image", $textColor);
         imagestring($image, 2, 55, 105, "Provided", $textColor);
