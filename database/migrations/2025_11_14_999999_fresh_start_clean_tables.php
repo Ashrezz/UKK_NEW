@@ -63,6 +63,7 @@ return new class extends Migration
                 dibatalkan_oleh VARCHAR(255) NULL,
                 biaya DECIMAL(10, 2) NOT NULL DEFAULT 0,
                 waktu_pembayaran TIMESTAMP NULL,
+                bukti_pembayaran VARCHAR(255) NULL COMMENT 'Filesystem path (backup, prefer BLOB)',
                 bukti_pembayaran_blob MEDIUMBLOB NULL COMMENT 'Binary image data stored as MEDIUMBLOB',
                 bukti_pembayaran_mime VARCHAR(255) NULL COMMENT 'MIME type: image/jpeg, image/png, etc',
                 bukti_pembayaran_name VARCHAR(255) NULL COMMENT 'Original filename',

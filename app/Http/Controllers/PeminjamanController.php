@@ -250,13 +250,24 @@ class PeminjamanController extends Controller
 
         if ($request->hasFile('bukti_pembayaran')) {
             $file = $request->file('bukti_pembayaran');
-
-            // Store the uploaded file in the public disk under bukti_pembayaran
-            // This keeps files in storage/app/public/bukti_pembayaran and allows serving via /storage
+            
+            // ✅ BLOB PRIMARY: Save to BLOB immediately
+            $fileContent = file_get_contents($file->getRealPath());
+            $mimeType = $file->getMimeType();
+            $fileName = $file->getClientOriginalName();
+            $fileSize = $file->getSize();
+            
+            // Also save to filesystem for backup
             $path = $file->store('bukti_pembayaran', 'public');
 
             $peminjaman->update([
-                'bukti_pembayaran' => $path, // stores like 'bukti_pembayaran/filename.jpg'
+                'bukti_pembayaran' => $path,
+                // ✅ BLOB columns
+                'bukti_pembayaran_blob' => $fileContent,
+                'bukti_pembayaran_mime' => $mimeType,
+                'bukti_pembayaran_name' => $fileName,
+                'bukti_pembayaran_size' => $fileSize,
+                // Status
                 'status_pembayaran' => 'menunggu_verifikasi',
                 'waktu_pembayaran' => now()
             ]);
