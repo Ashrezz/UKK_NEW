@@ -23,18 +23,18 @@ $finfo = new \finfo(FILEINFO_MIME_TYPE);
 
 foreach ($records as $r) {
     $pathHex = $r->bukti_pembayaran;
-    
+
     // Try to decode if it's hex-encoded
     if (strpos($pathHex, '0x') === 0) {
         $path = hex2bin(substr($pathHex, 2));
     } else {
         $path = $pathHex;
     }
-    
+
     echo "ID: {$r->id}\n";
     echo "  Path: {$path}\n";
     echo "  Deleted: " . ($r->deleted_at ? 'YES (' . $r->deleted_at . ')' : 'NO') . "\n";
-    
+
     // Try to find and load file
     $candidates = [
         storage_path('app/public/' . $path),
@@ -42,7 +42,7 @@ foreach ($records as $r) {
         public_path($path),
         $path,
     ];
-    
+
     $found = false;
     foreach ($candidates as $candidate) {
         if (file_exists($candidate)) {
@@ -55,10 +55,10 @@ foreach ($records as $r) {
             break;
         }
     }
-    
+
     if (!$found) {
         echo "  ✗ File not found in any location\n";
     }
-    
+
     echo "\n";
 }
