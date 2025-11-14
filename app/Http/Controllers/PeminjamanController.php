@@ -474,25 +474,17 @@ class PeminjamanController extends Controller
         ];
 
         // If PDF generator (barryvdh/laravel-dompdf) is available, stream a PDF.
-        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) || class_exists(\Barryvdh\DomPDF\PDF::class) || class_exists('\PDF')) {
-            try {
-                // Prefer the facade alias PDF if available
-                if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
-                } else if (class_exists('\PDF')) {
-                    $pdf = \PDF::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
-                } else {
-                    // fallback to the other class name
-                    $pdf = \Barryvdh\DomPDF\PDF::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
-                }
+        try {
+            if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
                 $filename = 'laporan-peminjaman-' . $month . '.pdf';
                 return $pdf->download($filename);
-            } catch (\Throwable $e) {
-                // If PDF generation fails, fall through to return HTML view with warning
-                \Log::error('PDF generation failed: ' . $e->getMessage());
-                $data['pdf_error'] = $e->getMessage();
-                return view('peminjaman.laporan', $data);
             }
+        } catch (\Throwable $e) {
+            // If PDF generation fails, fall through to return HTML view with warning
+            \Log::error('PDF generation failed: ' . $e->getMessage());
+            $data['pdf_error'] = $e->getMessage();
+            return view('peminjaman.laporan', $data);
         }
 
         // PDF lib not installed — return HTML so user can preview the report and install the package.
