@@ -10,7 +10,7 @@ cmds = [
   "mv node_modules node_modules_bak 2>/dev/null || true",
   "npm install --legacy-peer-deps --no-fund --omit=dev",
   "npm run build",
-<<<<<<< HEAD
+
   "composer install --no-dev --optimize-autoloader"
 =======
 
