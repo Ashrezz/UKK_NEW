@@ -31,7 +31,7 @@ class PembayaranController extends Controller
                 $peminjaman->bukti_pembayaran_name = $filename;
                 $peminjaman->bukti_pembayaran_size = strlen($contents);
 
-                $this->info("✓ Saved to BLOB: {$filename} (" . round(strlen($contents) / 1024, 2) . "KB)");
+                \Log::info("✓ Saved to BLOB: {$filename} (" . round(strlen($contents) / 1024, 2) . "KB)");
             } catch (\Throwable $e) {
                 \Log::error("Failed to save BLOB for peminjaman {$id}: " . $e->getMessage());
                 return back()->with('error', 'Gagal menyimpan bukti pembayaran ke database.');
@@ -54,16 +54,18 @@ class PembayaranController extends Controller
                         copy($storedFull, $publicFull);
                     }
                 }
+
+                // Update bukti_pembayaran path reference
+                $peminjaman->bukti_pembayaran = $relativePath;
             } catch (\Throwable $e) {
                 // File storage backup gagal, tapi tidak masalah karena BLOB sudah tersimpan
                 \Log::warning("Optional file storage backup failed: " . $e->getMessage());
             }
 
-            // Update status pembayaran
-            $peminjaman->update([
-                'status_pembayaran' => 'menunggu_verifikasi',
-                'waktu_pembayaran' => now(),
-            ]);
+            // Update status pembayaran dan SAVE semuanya
+            $peminjaman->status_pembayaran = 'menunggu_verifikasi';
+            $peminjaman->waktu_pembayaran = now();
+            $peminjaman->save();
 
             return back()->with('success', 'Bukti pembayaran berhasil diunggah dan menunggu verifikasi admin.');
         }
