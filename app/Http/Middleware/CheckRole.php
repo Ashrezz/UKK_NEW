@@ -31,6 +31,8 @@ class CheckRole
             ], 403);
         }
 
-        return redirect()->route('home')->with('error', 'Unauthorized access.');
+        // Redirect back to the last allowed page if available to prevent forced URL jumps
+        $fallback = session('last_allowed_url', route('home'));
+        return redirect()->to($fallback)->with('error', 'Unauthorized access.');
     }
 }
