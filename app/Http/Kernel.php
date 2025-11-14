@@ -36,11 +36,9 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            // Require that navigation originated from the sidebar (sets a short-lived cookie)
+            // Require that navigation originated from the sidebar (sets a short-lived cookie or query param)
             \App\Http\Middleware\RequireSidebarNavigation::class,
-            // Enforce navigation flow for protected pages (blocks direct URL typing)
-            \App\Http\Middleware\EnforceNavigation::class,
-            // Store the last visited allowed URL for authenticated users (should run after enforcement)
+            // Store the last visited allowed URL for authenticated users
             \App\Http\Middleware\StoreLastVisited::class,
 
         ],
