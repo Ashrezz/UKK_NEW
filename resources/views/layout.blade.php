@@ -188,9 +188,12 @@
 
             document.querySelectorAll('.sidebar-link').forEach(a => {
                 a.addEventListener('click', function(e){
+                    // allow modifier keys / middle click / right-click to open new tab
+                    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button && e.button !== 0) return;
+
                     const href = a.getAttribute('href');
                     // allow external links, anchors, or JS actions
-                    if (!href || href.startsWith('http') && !isSameOrigin(href)) return;
+                    if (!href || (href.startsWith('http') && !isSameOrigin(href))) return;
                     if (a.classList.contains('no-ajax') || a.target === '_blank') return;
                     // special: logout should work normally
                     if (href.includes('/logout')) return;

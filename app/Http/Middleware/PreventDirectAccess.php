@@ -40,8 +40,6 @@ class PreventDirectAccess
 
         foreach ($publicPatterns as $p) {
             if ($request->is($p) || $request->is($p.'/*')) {
-                // update last visited for internal navigation tracking
-                session(['last_visited_url' => $request->fullUrl()]);
                 return $next($request);
             }
         }
@@ -49,44 +47,22 @@ class PreventDirectAccess
         $currentUrl = $request->fullUrl();
         $appHost = $request->getHost();
 
-        // If session has a last visited URL from the same host, allow (internal navigation)
-        $last = session('last_visited_url');
-        if ($last) {
-            $lastHost = parse_url($last, PHP_URL_HOST);
-            if ($lastHost === $appHost) {
-                session(['last_visited_url' => $currentUrl]);
-                return $next($request);
-            }
-        }
-
         // Allow requests explicitly marked as internal navigation (set by client-side JS)
         $internalHeader = $request->headers->get('X-Internal-Navigation') ?: $request->headers->get('x-internal-navigation');
         if ($internalHeader && (string)$internalHeader === '1') {
-            session(['last_visited_url' => $currentUrl]);
             return $next($request);
         }
 
-        // Check referer: allow if from same host
+        // Check referer: allow if from same host (normal browser link clicks include referer)
         $referer = $request->headers->get('referer');
         if ($referer) {
             $refererHost = parse_url($referer, PHP_URL_HOST);
             if ($refererHost === $appHost) {
-                session(['last_visited_url' => $currentUrl]);
                 return $next($request);
             }
         }
 
-        // Fallback: check url()->previous()
-        $previous = url()->previous();
-        if ($previous) {
-            $prevHost = parse_url($previous, PHP_URL_HOST);
-            if ($prevHost === $appHost) {
-                session(['last_visited_url' => $currentUrl]);
-                return $next($request);
-            }
-        }
-
-        // Otherwise block direct access
+        // Otherwise block direct access (typing URL) — no session/previous fallback here
         return $this->redirectBackWithMessage();
     }
 
