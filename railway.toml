@@ -15,7 +15,8 @@ cmds = [
   "php artisan migrate --force",
   "php artisan db:seed --force",
   "php artisan app:generate-placeholder-blobs --force",
-  "php artisan app:normalize-blob-records"
+  "php artisan app:normalize-blob-records",
+  "php artisan app:clear-bukti-path-use-blob"
 ]
 
 [env]

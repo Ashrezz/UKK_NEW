@@ -288,7 +288,7 @@ class PembayaranController extends Controller
     public function debugBlob($id)
     {
         $p = Peminjaman::withTrashed()->find($id);
-        
+
         if (!$p) {
             return response()->json(['error' => 'Record not found', 'id' => $id], 404);
         }

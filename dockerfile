@@ -40,7 +40,8 @@ RUN php artisan config:clear \
     && php artisan migrate --force \
     && php artisan db:seed --force \
     && php artisan app:generate-placeholder-blobs --force \
-    && php artisan app:normalize-blob-records
+    && php artisan app:normalize-blob-records \
+    && php artisan app:clear-bukti-path-use-blob
 # Expose port & run PHP server
 EXPOSE 8080
 CMD ["php", "-S", "0.0.0.0:8080", "public/index.php"]
