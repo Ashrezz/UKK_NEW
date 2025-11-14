@@ -18,7 +18,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Peminjaman
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
     Route::get('/peminjaman/jadwal', [PeminjamanController::class, 'jadwal'])->name('peminjaman.jadwal');
 
@@ -42,7 +42,7 @@ Route::middleware(['auth', 'role:admin,petugas', 'prevent_direct_access'])->grou
 });
 
 // Admin only: Room Management
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin', 'prevent_direct_access'])->group(function () {
     Route::post('/ruang', [RuangController::class, 'store']);
     Route::delete('/ruang/{id}', [RuangController::class, 'destroy']);
     // peminjaman manage routes moved to admin+petugas group

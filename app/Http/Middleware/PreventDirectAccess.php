@@ -8,80 +8,66 @@ use Illuminate\Http\Request;
 class PreventDirectAccess
 {
     /**
-     * Middleware sederhana yang mencegah akses langsung ke halaman via URL.
+     * Handle an incoming request.
      *
-     * Cek referer atau session untuk memverifikasi user datang dari halaman yang diizinkan.
-     * Jika direct access (tidak ada referer dari domain yang sama), redirect ke halaman sebelumnya.
-     * Session diperbarui untuk melacak halaman yang dikunjungi.
+     * Require non-API web requests to contain a Referer header from the same host.
+     * If not present, redirect back (or to home) with an error message.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
      */
     public function handle(Request $request, Closure $next)
     {
-        // Hanya berlaku untuk request GET
-        if (!$request->isMethod('get')) {
+        // Only enforce for GET web requests
+        if (! $request->isMethod('get')) {
             return $next($request);
         }
 
-        // Hanya untuk user yang authenticated
-        if (!auth()->check()) {
+        // Allow API/JSON and assets through
+        if ($request->wantsJson() || $request->is('api/*') || $this->isAsset($request)) {
             return $next($request);
         }
 
-        $currentUrl = $request->fullUrl();
-        $referer = $request->headers->get('referer');
-
-        // List halaman yang boleh diakses langsung (home, login, logout, assets, API)
-        $allowedDirectPaths = [
+        // Public paths that may be accessed directly
+        $publicPatterns = [
             '/',
             'login',
             'register',
             'logout',
             'info-pengajuan',
-            'css/',
-            'js/',
-            'img/',
-            'storage/',
-            'api/',
         ];
 
-        // Check apakah current path ada di allowed list
-        $isAllowedDirect = false;
-        foreach ($allowedDirectPaths as $path) {
-            if ($request->is($path . '*')) {
-                $isAllowedDirect = true;
-                break;
-            }
-        }
-
-        // Jika halaman diizinkan untuk diakses langsung, lanjut
-        if ($isAllowedDirect) {
-            session(['last_visited_url' => $currentUrl]);
-            return $next($request);
-        }
-
-        // Check referer: apakah request berasal dari halaman internal (domain sama)
-        if ($referer) {
-            $appHost = parse_url(url('/'), PHP_URL_HOST);
-            $refererHost = parse_url($referer, PHP_URL_HOST);
-
-            // Jika referer dari domain yang sama, izinkan akses
-            if ($refererHost === $appHost) {
-                session(['last_visited_url' => $currentUrl]);
+        foreach ($publicPatterns as $p) {
+            if ($request->is($p) || $request->is($p.'/*')) {
                 return $next($request);
             }
         }
 
-        // Check session: apakah ada halaman sebelumnya yang diizinkan
-        $lastUrl = session('last_visited_url');
-        if ($lastUrl) {
-            // Jika current URL berbeda dari last, berarti akses dari sidebar atau link internal
-            if ($currentUrl !== $lastUrl) {
-                session(['last_visited_url' => $currentUrl]);
-                return $next($request);
-            }
+        $referer = $request->headers->get('referer');
+
+        if (! $referer) {
+            return $this->redirectBackWithMessage();
         }
 
-        // Jika tidak ada referer dan direct access terdeteksi, redirect ke home dengan pesan
-        $previousUrl = session('last_visited_url', url('/'));
-        return redirect()->to($previousUrl)->with('error', 'Akses langsung tidak diizinkan. Gunakan navigasi yang tersedia.');
+        $refererHost = parse_url($referer, PHP_URL_HOST);
+        $currentHost = $request->getHost();
+
+        if ($refererHost !== $currentHost) {
+            return $this->redirectBackWithMessage();
+        }
+
+        return $next($request);
+    }
+
+    protected function isAsset(Request $request)
+    {
+        return $request->is('css/*') || $request->is('js/*') || $request->is('img/*') || $request->is('build/*') || $request->is('favicon.ico');
+    }
+
+    protected function redirectBackWithMessage()
+    {
+        $redirectTo = url()->previous() ?: route('home');
+        return redirect($redirectTo)->with('error', 'Akses langsung melalui URL tidak diperbolehkan. Gunakan navigasi aplikasi.');
     }
 }

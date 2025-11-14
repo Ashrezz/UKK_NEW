@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ruang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class RuangController extends Controller
 {
@@ -21,6 +22,18 @@ class RuangController extends Controller
     // GET /api/ruang - Tampilkan semua ruang
     public function index(Request $request)
     {
+        // Guard: jika user datang dari halaman jadwal via browser (referer)
+        // maka jangan izinkan akses ke halaman ruang dan kembalikan ke jadwal.
+        // Tetap biarkan permintaan API/JSON berjalan.
+        if (! $request->wantsJson() && ! $request->is('api/*')) {
+            $previous = url()->previous();
+            // cek path sederhana '/peminjaman/jadwal' untuk memastikan asal
+            if ($previous && Str::contains($previous, '/peminjaman/jadwal')) {
+                return redirect()->route('peminjaman.jadwal')
+                    ->with('error', 'Akses ke halaman ruang dari halaman Jadwal tidak diperbolehkan.');
+            }
+        }
+
         $ruangs = Ruang::all();
 
         // Jika permintaan dari API (JSON) kembalikan respons JSON,
