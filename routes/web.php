@@ -42,6 +42,9 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::post('/peminjaman/{id}/reject', [PeminjamanController::class, 'reject'])->name('peminjaman.reject');
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy']);
     Route::get('/api/peminjaman/{id}', [PeminjamanController::class, 'detail']);
+
+    // Serve bukti pembayaran files through Laravel (works even if public/storage symlink is missing)
+    Route::get('/pembayaran/bukti/{filename}', [\App\Http\Controllers\PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
 });
 
 // Admin only: Room Management

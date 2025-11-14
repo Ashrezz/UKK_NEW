@@ -72,10 +72,10 @@ class Peminjaman extends Model
         }
 
         try {
-            foreach ($candidates as $candidate) {
+                foreach ($candidates as $candidate) {
                 if (Storage::disk('public')->exists($candidate)) {
-                    // Return a relative public path so it works regardless of APP_URL/host
-                    return '/storage/' . ltrim($candidate, '/');
+                    // Serve via controller route so it works even if public/storage symlink isn't present
+                    return route('pembayaran.bukti', ['filename' => basename($candidate)]);
                 }
             }
         } catch (\Throwable $e) {

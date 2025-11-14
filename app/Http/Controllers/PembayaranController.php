@@ -51,6 +51,42 @@ class PembayaranController extends Controller
         return view('pembayaran.verifikasi', compact('peminjaman'));
     }
 
+    /**
+     * Serve a bukti pembayaran file from the public disk.
+     * This avoids depending on the public/storage symlink being present on the server.
+     */
+    public function showBukti($filename)
+    {
+        // sanitize filename to avoid traversal
+        $filename = basename($filename);
+
+        $candidates = [
+            $filename,
+            'bukti_pembayaran/' . $filename,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (Storage::disk('public')->exists($candidate)) {
+                // Construct expected local path for public disk (storage/app/public/...)
+                $full = storage_path('app/public/' . $candidate);
+                if (file_exists($full)) {
+                    return response()->file($full);
+                }
+                // As a fallback, attempt to read via Storage and stream
+                try {
+                    $stream = Storage::disk('public')->get($candidate);
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->buffer($stream) ?: 'application/octet-stream';
+                    return response($stream, 200, ['Content-Type' => $mime]);
+                } catch (\Throwable $e) {
+                    // continue to next candidate or abort
+                }
+            }
+        }
+
+        abort(404, 'File not found');
+    }
+
     public function verifikasi($id)
     {
         $peminjaman = Peminjaman::findOrFail($id);

@@ -44,8 +44,8 @@
                                     <td class="hidden lg:table-cell px-4 py-3 muted">{{ $p->keperluan }}</td>
                                     <td class="hidden lg:table-cell px-4 py-3 muted">Rp {{ number_format($p->biaya, 0, ',', '.') }}</td>
                                     <td class="px-4 py-3">
-                                        @if($p->bukti_pembayaran)
-                                            <a href="{{ asset('storage/bukti_pembayaran/' . $p->bukti_pembayaran) }}" target="_blank" class="text-red-600 hover:text-red-700 font-medium">Lihat</a>
+                                        @if($p->bukti_pembayaran_src)
+                                            <a href="{{ $p->bukti_pembayaran_src }}" target="_blank" class="text-red-600 hover:text-red-700 font-medium">Lihat</a>
                                         @else
                                             <span class="muted">Belum ada</span>
                                         @endif
