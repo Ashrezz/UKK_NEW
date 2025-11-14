@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ruang;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -13,8 +14,16 @@ class RuangController extends Controller
         // Pastikan user harus login untuk semua aksi di controller ini
         $this->middleware('auth');
 
-        // Hanya admin dan petugas boleh melihat daftar dan detail ruang
-        $this->middleware('role:admin,petugas')->only(['index', 'show']);
+        // Jika ada pengguna dengan role 'petugas' maka izinkan both admin & petugas
+        // untuk melihat daftar/detail ruang. Jika tidak ada, batasi hanya untuk admin.
+        $hasPetugas = User::where('role', 'petugas')->exists();
+        if ($hasPetugas) {
+            // Hanya admin dan petugas boleh melihat daftar dan detail ruang
+            $this->middleware('role:admin,petugas')->only(['index', 'show']);
+        } else {
+            // Jika role 'petugas' tidak ada, hanya admin yang boleh melihat/manage ruang
+            $this->middleware('role:admin')->only(['index', 'show']);
+        }
 
         // Hanya admin boleh membuat dan menghapus ruang
         $this->middleware('role:admin')->only(['store', 'destroy', 'update']);
