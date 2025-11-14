@@ -142,9 +142,27 @@
 // When a sidebar link is clicked, set a short-lived cookie to allow the next navigation.
 document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('.sidebar-link').forEach(function(el){
-        el.addEventListener('click', function(){
-            // Set cookie valid for 10 seconds
-            document.cookie = 'allowed_nav=1; max-age=10; path=/';
+        el.addEventListener('click', function(e){
+            // Respect modifier keys (open in new tab) and non-left clicks
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                return;
+            }
+
+            e.preventDefault();
+
+            // Set cookie valid for a short time (120 seconds) and with SameSite Lax
+            document.cookie = 'allowed_nav=1; max-age=120; path=/; samesite=Lax';
+
+            // Ensure cookie is persisted before navigating. Use a tiny delay.
+            const href = el.getAttribute('href');
+            setTimeout(function(){
+                // If the link has target _blank, open in new tab
+                if (el.target === '_blank') {
+                    window.open(href, '_blank');
+                } else {
+                    window.location.href = href;
+                }
+            }, 50);
         });
     });
 });
