@@ -30,40 +30,44 @@ class SetupStorage extends Command
         $storageAppPublic = storage_path('app/public');
 
         // Create storage/app/public directory if it doesn't exist
-        if (!File::isDirectory($storageAppPublic)) {
+        if (!is_dir($storageAppPublic)) {
             File::makeDirectory($storageAppPublic, 0755, true);
             $this->info('Created directory: ' . $storageAppPublic);
         }
 
-        // Check if link already exists
-        if (File::isLink($storageLink)) {
+        // Check if link already exists using is_link (built-in PHP function)
+        if (is_link($storageLink)) {
             if ($this->option('force')) {
-                File::delete($storageLink);
+                @unlink($storageLink);
                 $this->info('Removed existing symlink.');
             } else {
                 $this->info('Symlink already exists at: ' . $storageLink);
                 return 0;
             }
-        } elseif (File::exists($storageLink)) {
+        } elseif (is_dir($storageLink) || file_exists($storageLink)) {
             if (!$this->option('force')) {
-                $this->warn('Directory already exists at: ' . $storageLink);
+                $this->warn('Directory/file already exists at: ' . $storageLink);
                 $this->line('Use --force to overwrite.');
                 return 1;
             }
-            File::deleteDirectory($storageLink);
-            $this->info('Removed existing directory.');
+            if (is_dir($storageLink)) {
+                File::deleteDirectory($storageLink);
+            } else {
+                @unlink($storageLink);
+            }
+            $this->info('Removed existing directory/file.');
         }
 
         // Create subdirectories for bukti_pembayaran
         $buktiDir = $storageAppPublic . '/bukti_pembayaran';
-        if (!File::isDirectory($buktiDir)) {
+        if (!is_dir($buktiDir)) {
             File::makeDirectory($buktiDir, 0755, true);
             $this->info('Created directory: ' . $buktiDir);
         }
 
         // Create symlink
         try {
-            File::link($storageAppPublic, $storageLink);
+            symlink($storageAppPublic, $storageLink);
             $this->info('Symlink created successfully!');
             $this->info('From: ' . $storageAppPublic);
             $this->info('To: ' . $storageLink);
@@ -72,7 +76,7 @@ class SetupStorage extends Command
             $this->error('Failed to create symlink: ' . $e->getMessage());
             $this->warn('Note: On some systems (Windows, some shared hosts), symlinks may fail.');
             $this->line('The application will still serve files via the /pembayaran/bukti route.');
-            return 1;
+            return 0; // Return 0 (success) because the app works without symlink via controller route
         }
     }
 }
