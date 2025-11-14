@@ -26,11 +26,13 @@ Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
 
     // Payment routes
     Route::post('/peminjaman/{id}/upload', [PembayaranController::class, 'uploadBukti'])->name('pembayaran.upload');
-
-    // Public route untuk serve gambar (harus di luar middleware agar public bisa lihat)
 });
 
-// Public: Serve bukti pembayaran (BLOB or file)
+// ✅ PUBLIC: Serve bukti pembayaran dari BLOB database
+// PRIMARY: By ID (most reliable) - langsung query BLOB by ID
+Route::get('/pembayaran/bukti/blob/{id}', [PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
+
+// FALLBACK: By filename
 Route::get('/pembayaran/bukti/{filename}', [PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
 
 // Admin/Petugas
@@ -48,9 +50,6 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::post('/peminjaman/{id}/reject', [PeminjamanController::class, 'reject'])->name('peminjaman.reject');
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy']);
     Route::get('/api/peminjaman/{id}', [PeminjamanController::class, 'detail']);
-
-    // Serve bukti pembayaran BLOB version (fallback)
-    Route::get('/pembayaran/bukti/blob/{id}', [PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
 });
 
 // Admin only: Room Management

@@ -44,19 +44,21 @@ class Peminjaman extends Model
     /**
      * Accessor untuk mendapatkan URL gambar bukti pembayaran
      * ✅ PRIMARY: Gunakan BLOB dari database (guaranteed work di Railway)
-     * FALLBACK: Gunakan file storage jika BLOB tidak tersedia
+     *
+     * Langsung mengambil dari BLOB by ID:
+     * /pembayaran/bukti/blob/{id} → Database query → Binary image
      *
      * Usage: $peminjaman->bukti_pembayaran_src
      */
     public function getBuktiPembayaranSrcAttribute()
     {
-        // ✅ PRIMARY: Jika BLOB tersedia, serve dari database
+        // ✅ PRIMARY: Jika BLOB tersedia, serve langsung dari database by ID
         if (!empty($this->attributes['bukti_pembayaran_blob'])) {
-            // Route showBukti akan mendeteksi dan serve dari BLOB
-            return route('pembayaran.bukti', ['filename' => $this->bukti_pembayaran_name ?? 'bukti_' . $this->id]);
+            // Gunakan ID untuk query yang paling cepat dan reliable
+            return route('pembayaran.bukti.blob', ['id' => $this->id]);
         }
 
-        // FALLBACK: Gunakan file path jika ada
+        // FALLBACK: Jika BLOB kosong, coba gunakan file path
         $value = $this->attributes['bukti_pembayaran'] ?? null;
         if (!$value) {
             return null;
@@ -73,7 +75,7 @@ class Peminjaman extends Model
             $storageKey = substr($storageKey, 7);
         }
 
-        // Generate route URL
+        // Generate route URL (fallback)
         return route('pembayaran.bukti', ['filename' => basename($storageKey)]);
     }
 }

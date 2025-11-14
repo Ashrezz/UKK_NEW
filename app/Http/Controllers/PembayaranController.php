@@ -157,24 +157,37 @@ class PembayaranController extends Controller
 
     /**
      * Serve bukti pembayaran stored as BLOB in the database.
+     * Direct by ID - simplest and most reliable method
      */
     public function showBuktiBlob($id)
     {
-        $p = Peminjaman::findOrFail($id);
-        $blob = $p->bukti_pembayaran_blob ?? null;
-        if (!$blob) {
-            return response()->json(['error' => 'File not found in database'], 404);
-        }
+        try {
+            $p = Peminjaman::findOrFail($id);
+            $blob = $p->bukti_pembayaran_blob ?? null;
 
-        $mime = $p->bukti_pembayaran_mime ?? null;
-        if (!$mime) {
-            $finfo = new \finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo->buffer($blob) ?: 'application/octet-stream';
-        }
+            if (!$blob || empty($blob)) {
+                \Log::warning("BLOB not found for peminjaman {$id}");
+                return response()->json(['error' => 'Bukti pembayaran tidak tersedia'], 404);
+            }
 
-        return response($blob, 200)
-            ->header('Content-Type', $mime)
-            ->header('Content-Length', strlen($blob));
+            // Detect MIME type
+            $mime = $p->bukti_pembayaran_mime ?? null;
+            if (!$mime) {
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->buffer($blob) ?: 'image/jpeg';
+            }
+
+            // Return binary image with proper headers
+            return response($blob, 200)
+                ->header('Content-Type', $mime)
+                ->header('Content-Disposition', 'inline')
+                ->header('Content-Length', strlen($blob))
+                ->header('Cache-Control', 'public, max-age=86400');
+
+        } catch (\Throwable $e) {
+            \Log::error("Error serving BLOB for peminjaman {$id}: " . $e->getMessage());
+            return response()->json(['error' => 'Gagal mengambil bukti pembayaran'], 500);
+        }
     }
 
     public function store(Request $request)
