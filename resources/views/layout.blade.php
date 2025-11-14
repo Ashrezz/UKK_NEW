@@ -122,4 +122,16 @@
         });
     </script>
 </body>
+
+<script>
+// When a sidebar link is clicked, set a short-lived cookie to allow the next navigation.
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.sidebar-link').forEach(function(el){
+        el.addEventListener('click', function(){
+            // Set cookie valid for 10 seconds
+            document.cookie = 'allowed_nav=1; max-age=10; path=/';
+        });
+    });
+});
+</script>
 </html>

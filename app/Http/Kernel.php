@@ -38,6 +38,8 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             // Store the last visited allowed URL for authenticated users
             \App\Http\Middleware\StoreLastVisited::class,
+            // Require that navigation originated from the sidebar (sets a short-lived cookie)
+            \App\Http\Middleware\RequireSidebarNavigation::class,
             // Enforce navigation flow for protected pages (blocks direct URL typing)
             \App\Http\Middleware\EnforceNavigation::class,
 
