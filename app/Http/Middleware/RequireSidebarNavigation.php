@@ -43,6 +43,12 @@ class RequireSidebarNavigation
             }
         }
 
+        // Allow if current page equals the last stored allowed URL (prevents redirect loops)
+        $last = session('last_allowed_url');
+        if ($last && $request->fullUrl() === $last) {
+            return $next($request);
+        }
+
         // Allow if the short-lived cookie is present (set by sidebar click)
         if ($request->cookie('allowed_nav')) {
             return $next($request);
@@ -50,6 +56,11 @@ class RequireSidebarNavigation
 
         // Otherwise, redirect back to last allowed URL
         $fallback = session('last_allowed_url', url('/'));
+        // If fallback equals current, allow to avoid infinite redirect
+        if ($fallback === $request->fullUrl()) {
+            return $next($request);
+        }
+
         return redirect()->to($fallback)->with('error', 'Use the sidebar to navigate.');
     }
 }

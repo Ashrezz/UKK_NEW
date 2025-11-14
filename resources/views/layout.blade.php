@@ -11,6 +11,21 @@
     'resources/js/app.js'
 ])
 
+    <style>
+        /* Hide the floating mobile toggle when sidebar is open to avoid overlapping menu text */
+        @media (max-width: 767px) {
+            body.sidebar-open #sidebarToggle {
+                display: none !important;
+            }
+            /* Ensure close button remains visible */
+            body.sidebar-open #sidebarClose {
+                display: inline-flex;
+            }
+            /* Slightly shift sidebar content to avoid being under system UI */
+            #sidebar { z-index: 60; }
+        }
+    </style>
+
 </head>
 <body class="min-h-screen">
     @if(!request()->routeIs('login') && !request()->is('register'))
