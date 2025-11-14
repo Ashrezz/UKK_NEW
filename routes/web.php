@@ -35,6 +35,9 @@ Route::get('/pembayaran/bukti/blob/{id}', [PembayaranController::class, 'showBuk
 // FALLBACK: By filename
 Route::get('/pembayaran/bukti/{filename}', [PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
 
+// Emergency: Populate missing BLOBs (call this if images are missing)
+Route::get('/pembayaran/populate-missing-blobs', [PembayaranController::class, 'populateMissingBlobs'])->name('pembayaran.populate-missing-blobs');
+
 // Admin/Petugas
 Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);

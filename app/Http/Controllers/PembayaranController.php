@@ -358,4 +358,85 @@ class PembayaranController extends Controller
 
         return redirect()->route('home')->with('success', 'Pengajuan peminjaman berhasil dibuat!');
     }
+
+    /**
+     * Emergency endpoint: Populate missing BLOBs with placeholder images
+     * Can be called via GET /pembayaran/populate-missing-blobs
+     * Returns JSON with results
+     */
+    public function populateMissingBlobs()
+    {
+        $records = Peminjaman::whereNotNull('bukti_pembayaran')
+            ->where(function ($query) {
+                $query->whereNull('bukti_pembayaran_blob')
+                    ->orWhere('bukti_pembayaran_blob', '');
+            })
+            ->get();
+
+        $count = $records->count();
+
+        if ($count === 0) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'All records already have BLOB data',
+                'generated' => 0,
+                'failed' => 0,
+            ]);
+        }
+
+        $generated = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($records as $peminjaman) {
+            try {
+                $placeholder = $this->generatePlaceholderImage();
+                $filename = basename($peminjaman->bukti_pembayaran ?? 'bukti.png');
+
+                $peminjaman->bukti_pembayaran_blob = $placeholder;
+                $peminjaman->bukti_pembayaran_mime = 'image/png';
+                $peminjaman->bukti_pembayaran_name = $filename;
+                $peminjaman->bukti_pembayaran_size = strlen($placeholder);
+                $peminjaman->save();
+
+                $generated++;
+            } catch (\Throwable $e) {
+                $failed++;
+                $errors[] = "ID {$peminjaman->id}: " . $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'status' => $failed === 0 ? 'success' : 'partial',
+            'message' => "Processed {$count} records",
+            'generated' => $generated,
+            'failed' => $failed,
+            'errors' => $errors,
+        ]);
+    }
+
+    /**
+     * Generate a simple placeholder image (200x200 PNG with text)
+     */
+    private function generatePlaceholderImage()
+    {
+        $image = imagecreatetruecolor(200, 200);
+
+        $bgColor = imagecolorallocate($image, 200, 200, 200);
+        $textColor = imagecolorallocate($image, 100, 100, 100);
+        $borderColor = imagecolorallocate($image, 150, 150, 150);
+
+        imagefilledrectangle($image, 0, 0, 200, 200, $bgColor);
+        imagerectangle($image, 0, 0, 199, 199, $borderColor);
+
+        imagestring($image, 2, 50, 90, "No Image", $textColor);
+        imagestring($image, 2, 55, 105, "Provided", $textColor);
+
+        ob_start();
+        imagepng($image);
+        $imageData = ob_get_clean();
+        imagedestroy($image);
+
+        return $imageData;
+    }
 }
