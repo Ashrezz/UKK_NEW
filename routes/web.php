@@ -3,6 +3,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RuangController;
+use App\Http\Controllers\AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
@@ -24,8 +25,13 @@ Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
     Route::get('/peminjaman/jadwal', [PeminjamanController::class, 'jadwal'])->name('peminjaman.jadwal');
 
     // Payment routes
-    Route::post('/pembayaran/{id}/upload', [PembayaranController::class, 'uploadBukti'])->name('pembayaran.upload');
+    Route::post('/peminjaman/{id}/upload', [PembayaranController::class, 'uploadBukti'])->name('pembayaran.upload');
+
+    // Public route untuk serve gambar (harus di luar middleware agar public bisa lihat)
 });
+
+// Public: Serve bukti pembayaran (BLOB or file)
+Route::get('/pembayaran/bukti/{filename}', [PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
 
 // Admin/Petugas
 Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
@@ -43,9 +49,8 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy']);
     Route::get('/api/peminjaman/{id}', [PeminjamanController::class, 'detail']);
 
-    // Serve bukti pembayaran files through Laravel (works even if public/storage symlink is missing)
-    Route::get('/pembayaran/bukti/{filename}', [\App\Http\Controllers\PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
-    Route::get('/pembayaran/bukti/blob/{id}', [\App\Http\Controllers\PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
+    // Serve bukti pembayaran BLOB version (fallback)
+    Route::get('/pembayaran/bukti/blob/{id}', [PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
 });
 
 // Admin only: Room Management
@@ -60,7 +65,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 });
 
 // Admin only: Tambah User
-use App\Http\Controllers\AdminUserController;
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/tambah-user', [AdminUserController::class, 'create'])->name('tambah_user.create');
     Route::post('/tambah-user', [AdminUserController::class, 'store'])->name('tambah_user.store');

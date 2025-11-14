@@ -11,41 +11,39 @@ class PembayaranController extends Controller
     public function uploadBukti(Request $request, $id)
     {
         $request->validate([
-            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
         $peminjaman = Peminjaman::findOrFail($id);
 
         if ($request->hasFile('bukti_pembayaran')) {
-            // Hapus file lama jika ada (hapus di storage dan juga di public copy)
-            if ($peminjaman->bukti_pembayaran && strpos($peminjaman->bukti_pembayaran, 'bukti_pembayaran/') === 0) {
-                try {
-                    $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
-                    Storage::disk($disk)->delete($peminjaman->bukti_pembayaran);
-                } catch (\Throwable $e) {
-                    // ignore deletion errors
-                }
-                // Remove public copy if exists
-                try {
-                    $oldBasename = basename($peminjaman->bukti_pembayaran);
-                    $publicPathOld = public_path('bukti_pembayaran/' . $oldBasename);
-                    if (file_exists($publicPathOld)) {
-                        @unlink($publicPathOld);
-                    }
-                } catch (\Throwable $e) {
-                    // ignore
-                }
-            }
-
-            // Simpan file baru ke configured disk (local/public atau s3)
             $file = $request->file('bukti_pembayaran');
             $filename = time() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $file->getClientOriginalName());
-            $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
-            $relativePath = $file->storeAs('bukti_pembayaran', $filename, $disk);
 
-            // If we're using local/public disk, also copy a public-accessible copy to public/bukti_pembayaran
-            if ($disk === 'public') {
-                try {
+            // ✅ PRIMARY: Simpan ke BLOB database untuk persistence di Railway
+            try {
+                $contents = file_get_contents($file->getRealPath());
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->buffer($contents) ?: ($file->getClientMimeType() ?? 'image/jpeg');
+
+                $peminjaman->bukti_pembayaran_blob = $contents;
+                $peminjaman->bukti_pembayaran_mime = $mime;
+                $peminjaman->bukti_pembayaran_name = $filename;
+                $peminjaman->bukti_pembayaran_size = strlen($contents);
+
+                $this->info("✓ Saved to BLOB: {$filename} (" . round(strlen($contents) / 1024, 2) . "KB)");
+            } catch (\Throwable $e) {
+                \Log::error("Failed to save BLOB for peminjaman {$id}: " . $e->getMessage());
+                return back()->with('error', 'Gagal menyimpan bukti pembayaran ke database.');
+            }
+
+            // SECONDARY: Simpan ke file storage sebagai backup (optional)
+            try {
+                $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
+                $relativePath = $file->storeAs('bukti_pembayaran', $filename, $disk);
+
+                // Jika local disk, juga copy ke public folder
+                if ($disk === 'public') {
                     $publicDir = public_path('bukti_pembayaran');
                     if (!is_dir($publicDir)) {
                         mkdir($publicDir, 0755, true);
@@ -54,29 +52,15 @@ class PembayaranController extends Controller
                     $publicFull = $publicDir . DIRECTORY_SEPARATOR . $filename;
                     if (file_exists($storedFull)) {
                         copy($storedFull, $publicFull);
-                    } else {
-                        // If storeAs returned path but file not yet moved, move the uploaded file directly
-                        $file->move($publicDir, $filename);
                     }
-                } catch (\Throwable $e) {
-                    // ignore copy errors - storage still contains the file
                 }
-            }
-
-            // Update database dengan path relative
-            // also save blob into DB (temporary persistence for UKK)
-            try {
-                $contents = file_get_contents($file->getRealPath());
-                $peminjaman->bukti_pembayaran_blob = $contents;
-                $peminjaman->bukti_pembayaran_mime = $file->getClientMimeType() ?? 'image/jpeg';
-                $peminjaman->bukti_pembayaran_name = $filename;
-                $peminjaman->bukti_pembayaran_size = filesize($file->getRealPath()) ?: strlen($contents);
             } catch (\Throwable $e) {
-                // ignore DB blob write errors
+                // File storage backup gagal, tapi tidak masalah karena BLOB sudah tersimpan
+                \Log::warning("Optional file storage backup failed: " . $e->getMessage());
             }
 
+            // Update status pembayaran
             $peminjaman->update([
-                'bukti_pembayaran' => $relativePath,
                 'status_pembayaran' => 'menunggu_verifikasi',
                 'waktu_pembayaran' => now(),
             ]);
@@ -99,14 +83,32 @@ class PembayaranController extends Controller
     }
 
     /**
-     * Serve a bukti pembayaran file from the configured storage disk.
-     * Supports both local (public) and S3 storage.
+     * Serve bukti pembayaran dari BLOB database (PRIMARY)
+     * Fallback ke file storage jika BLOB tidak tersedia
      */
     public function showBukti($filename)
     {
-        // sanitize filename to avoid traversal
+        // Sanitize filename
         $filename = basename($filename);
 
+        // ✅ PRIMARY: Coba serve dari BLOB database
+        // Cari record berdasarkan bukti_pembayaran_name atau ID
+        $peminjaman = Peminjaman::where('bukti_pembayaran_name', $filename)
+            ->orWhere('id', preg_replace('/[^0-9]/', '', $filename))
+            ->whereNotNull('bukti_pembayaran_blob')
+            ->first();
+
+        if ($peminjaman && !empty($peminjaman->bukti_pembayaran_blob)) {
+            $blob = $peminjaman->bukti_pembayaran_blob;
+            $mime = $peminjaman->bukti_pembayaran_mime ?? 'image/jpeg';
+
+            return response($blob, 200)
+                ->header('Content-Type', $mime)
+                ->header('Content-Length', strlen($blob))
+                ->header('Cache-Control', 'public, max-age=3600');
+        }
+
+        // FALLBACK: Coba serve dari file storage
         $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
 
         $candidates = [
@@ -116,42 +118,29 @@ class PembayaranController extends Controller
 
         foreach ($candidates as $candidate) {
             if (Storage::disk($disk)->exists($candidate)) {
-                // For local/public disk, serve file directly
-                if ($disk === 'public') {
-                    $full = storage_path('app/public/' . $candidate);
-                    if (file_exists($full)) {
-                        return response()->file($full);
-                    }
-                }
-
-                // Stream via Storage API (works for both S3 and local)
                 try {
                     $stream = Storage::disk($disk)->get($candidate);
-                    $mime = 'application/octet-stream';
-                    // Guess MIME type from extension
+                    $mime = 'image/jpeg';
                     if (preg_match('/\.(jpg|jpeg|png|gif)$/i', $candidate)) {
-                        $mime = 'image/' . (preg_match('/\.jpg$/i', $candidate) ? 'jpeg' :
+                        $mime = 'image/' . (preg_match('/\.jpg|jpeg$/i', $candidate) ? 'jpeg' :
                                 (preg_match('/\.png$/i', $candidate) ? 'png' : 'gif'));
                     }
-                    return response($stream, 200, ['Content-Type' => $mime]);
+                    return response($stream, 200)
+                        ->header('Content-Type', $mime)
+                        ->header('Content-Length', strlen($stream));
                 } catch (\Throwable $e) {
                     \Log::warning("Error reading {$candidate} from {$disk}: " . $e->getMessage());
-                    // continue to next candidate
                 }
             }
         }
 
-        // File not found - return helpful error message
-        \Log::warning("bukti_pembayaran file not found: {$filename} (disk: {$disk})");
+        // File tidak ditemukan
+        \Log::warning("bukti_pembayaran file not found: {$filename}");
 
         return response()->json([
             'error' => 'File not found',
-            'message' => 'Bukti pembayaran file tidak tersedia atau telah dihapus.',
+            'message' => 'Bukti pembayaran tidak tersedia. Silahkan upload kembali.',
             'filename' => $filename,
-            'disk' => $disk,
-            'note' => $disk === 's3'
-                ? 'File tidak ditemukan di AWS S3 storage.'
-                : 'File tidak ditemukan di local storage. Jika menggunakan Railway, file mungkin tidak persisten. Silahkan upload kembali.'
         ], 404);
     }    public function verifikasi($id)
     {
@@ -196,7 +185,7 @@ class PembayaranController extends Controller
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'keperluan' => 'required',
-            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'bukti_pembayaran' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'bukti_pembayaran.required' => 'Bukti pembayaran harus diunggah berupa file gambar (jpg, png)'
         ]);
@@ -207,15 +196,49 @@ class PembayaranController extends Controller
         $durasi = ceil(($selesai - $mulai) / 3600); // Duration in hours
         $biaya = $durasi * 50000; // Rp. 50.000 per hour
 
-        // Simpan file ke configured disk (local/public atau s3)
+        // Simpan file ke database BLOB
         $file = $request->file('bukti_pembayaran');
         $filename = time() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $file->getClientOriginalName());
-        $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
-        $relativePath = $file->storeAs('bukti_pembayaran', $filename, $disk);
 
-        // If local public disk is used, also keep a copy under public/bukti_pembayaran for direct serving
-        if ($disk === 'public') {
-            try {
+        // ✅ PRIMARY: Baca file dan simpan ke BLOB
+        try {
+            $contents = file_get_contents($file->getRealPath());
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->buffer($contents) ?: 'image/jpeg';
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal membaca file bukti pembayaran.');
+        }
+
+        // Create Peminjaman record dengan BLOB data
+        try {
+            $peminjaman = Peminjaman::create([
+                'user_id' => auth()->id(),
+                'ruang_id' => $request->ruang_id,
+                'tanggal' => $request->tanggal,
+                'jam_mulai' => $request->jam_mulai,
+                'jam_selesai' => $request->jam_selesai,
+                'keperluan' => $request->keperluan,
+                'status' => 'pending',
+                'biaya' => $biaya,
+                'status_pembayaran' => 'menunggu_verifikasi',
+                'waktu_pembayaran' => now(),
+                'bukti_pembayaran_blob' => $contents,
+                'bukti_pembayaran_mime' => $mime,
+                'bukti_pembayaran_name' => $filename,
+                'bukti_pembayaran_size' => strlen($contents),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error("Failed to create peminjaman with BLOB: " . $e->getMessage());
+            return back()->with('error', 'Gagal menyimpan peminjaman dengan bukti pembayaran.');
+        }
+
+        // SECONDARY: Simpan ke file storage sebagai backup (optional)
+        try {
+            $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
+            $relativePath = $file->storeAs('bukti_pembayaran', $filename, $disk);
+
+            // Jika local disk, juga copy ke public folder
+            if ($disk === 'public') {
                 $publicDir = public_path('bukti_pembayaran');
                 if (!is_dir($publicDir)) {
                     mkdir($publicDir, 0755, true);
@@ -224,38 +247,14 @@ class PembayaranController extends Controller
                 $publicFull = $publicDir . DIRECTORY_SEPARATOR . $filename;
                 if (file_exists($storedFull)) {
                     copy($storedFull, $publicFull);
-                } else {
-                    $file->move($publicDir, $filename);
                 }
-            } catch (\Throwable $e) {
-                // ignore
             }
-        }
 
-        $peminjaman = Peminjaman::create([
-            'user_id' => auth()->id(),
-            'ruang_id' => $request->ruang_id,
-            'tanggal' => $request->tanggal,
-            'jam_mulai' => $request->jam_mulai,
-            'jam_selesai' => $request->jam_selesai,
-            'keperluan' => $request->keperluan,
-            'status' => 'pending',
-            'biaya' => $biaya,
-            'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_pembayaran' => $relativePath,
-            'waktu_pembayaran' => now()
-        ]);
-
-        // Save blob data into the DB for temporary persistence (UKK)
-        try {
-            $contents = file_get_contents($file->getRealPath());
-            $peminjaman->bukti_pembayaran_blob = $contents;
-            $peminjaman->bukti_pembayaran_mime = $file->getClientMimeType() ?? 'image/jpeg';
-            $peminjaman->bukti_pembayaran_name = $filename;
-            $peminjaman->bukti_pembayaran_size = filesize($file->getRealPath()) ?: strlen($contents);
-            $peminjaman->save();
+            // Update bukti_pembayaran kolom sebagai reference
+            $peminjaman->update(['bukti_pembayaran' => $relativePath]);
         } catch (\Throwable $e) {
-            // ignore if DB cannot store blob
+            // Backup storage gagal, tidak masalah karena BLOB sudah tersimpan
+            \Log::warning("Optional file storage backup failed: " . $e->getMessage());
         }
 
         return redirect()->route('home')->with('success', 'Pengajuan peminjaman berhasil dibuat!');
