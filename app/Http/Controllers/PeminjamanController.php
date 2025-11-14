@@ -485,10 +485,15 @@ class PeminjamanController extends Controller
             'totalBookings' => $totalBookings,
         ];
 
-        // If PDF generator (barryvdh/laravel-dompdf) is available, stream a PDF.
+        // If request explicitly asks for a print view, return the clean print template (no menu)
+        if ($request->query('format') === 'print') {
+            return view('peminjaman.laporan_print', $data);
+        }
+
+        // If PDF generator (barryvdh/laravel-dompdf) is available, stream a PDF using the clean report view
         try {
             if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peminjaman.laporan_print', $data)->setPaper('a4', 'portrait');
                 $filename = 'laporan-peminjaman-' . $month . '.pdf';
                 return $pdf->download($filename);
             }
@@ -499,8 +504,8 @@ class PeminjamanController extends Controller
             return view('peminjaman.laporan', $data);
         }
 
-        // PDF lib not installed — return HTML so user can preview the report and install the package.
+        // PDF lib not installed — return clean print view so user can print/download
         $data['pdf_missing'] = true;
-        return view('peminjaman.laporan', $data);
+        return view('peminjaman.laporan_print', $data);
     }
 }
