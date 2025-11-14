@@ -7,6 +7,17 @@ use Illuminate\Http\Request;
 
 class RuangController extends Controller
 {
+    public function __construct()
+    {
+        // Pastikan user harus login untuk semua aksi di controller ini
+        $this->middleware('auth');
+
+        // Hanya admin dan petugas boleh melihat daftar dan detail ruang
+        $this->middleware('role:admin,petugas')->only(['index', 'show']);
+
+        // Hanya admin boleh membuat dan menghapus ruang
+        $this->middleware('role:admin')->only(['store', 'destroy', 'update']);
+    }
     // GET /api/ruang - Tampilkan semua ruang
     public function index(Request $request)
     {

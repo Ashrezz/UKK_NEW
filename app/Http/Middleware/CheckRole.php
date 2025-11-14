@@ -23,6 +23,14 @@ class CheckRole
             }
         }
 
+        // If the client expects JSON (API), return 403 JSON response instead of redirecting
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
         return redirect()->route('home')->with('error', 'Unauthorized access.');
     }
 }
