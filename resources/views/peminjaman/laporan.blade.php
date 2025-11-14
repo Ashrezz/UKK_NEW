@@ -21,6 +21,7 @@
                         <tr class="text-left text-xs text-muted uppercase">
                             <th class="px-3 py-2">#</th>
                             <th class="px-3 py-2">Ruang</th>
+                            <th class="px-3 py-2">Kapasitas</th>
                             <th class="px-3 py-2">Jumlah Peminjaman</th>
                             <th class="px-3 py-2">Pendapatan (Rp)</th>
                         </tr>
@@ -30,18 +31,19 @@
                         <tr>
                             <td class="px-3 py-2">{{ $i + 1 }}</td>
                             <td class="px-3 py-2">{{ $r['ruang'] }}</td>
+                            <td class="px-3 py-2">{{ isset($r['kapasitas']) ? $r['kapasitas'] . ' Orang' : '-' }}</td>
                             <td class="px-3 py-2">{{ $r['total_peminjaman'] }}</td>
                             <td class="px-3 py-2">{{ number_format($r['total_revenue'], 0, ',', '.') }}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td class="px-3 py-2" colspan="4">Tidak ada data untuk periode ini.</td>
+                            <td class="px-3 py-2" colspan="5">Tidak ada data untuk periode ini.</td>
                         </tr>
                         @endforelse
                     </tbody>
                     <tfoot>
                         <tr class="font-medium">
-                            <td class="px-3 py-2" colspan="2">Total</td>
+                            <td class="px-3 py-2" colspan="3">Total</td>
                             <td class="px-3 py-2">{{ $totalBookings }}</td>
                             <td class="px-3 py-2">{{ number_format($totalRevenue, 0, ',', '.') }}</td>
                         </tr>

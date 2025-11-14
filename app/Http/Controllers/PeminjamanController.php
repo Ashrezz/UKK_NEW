@@ -250,13 +250,13 @@ class PeminjamanController extends Controller
 
         if ($request->hasFile('bukti_pembayaran')) {
             $file = $request->file('bukti_pembayaran');
-            
+
             // ✅ BLOB PRIMARY: Save to BLOB immediately
             $fileContent = file_get_contents($file->getRealPath());
             $mimeType = $file->getMimeType();
             $fileName = $file->getClientOriginalName();
             $fileSize = $file->getSize();
-            
+
             // Also save to filesystem for backup
             $path = $file->store('bukti_pembayaran', 'public');
 
@@ -468,6 +468,7 @@ class PeminjamanController extends Controller
             $ruang = $ruangs->get($s->ruang_id);
             $rows[] = [
                 'ruang' => $ruang ? $ruang->nama_ruang : 'Ruang #' . $s->ruang_id,
+                'kapasitas' => $ruang ? ($ruang->kapasitas ?? null) : null,
                 'total_peminjaman' => (int) $s->total_peminjaman,
                 'total_revenue' => (float) $s->total_revenue,
             ];
