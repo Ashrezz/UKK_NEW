@@ -12,7 +12,7 @@ cmds = [
   "npm run build",
 
   "composer install --no-dev --optimize-autoloader"
-=======
+
 
   # Fix manifest location
   "node scripts/fix-manifest.js",
