@@ -10,14 +10,18 @@ export default defineConfig({
                 'resources/js/app.js'
             ],
             refresh: true,
-            buildDirectory: 'build', // WAJIB DAN BENAR
         }),
     ],
-
     build: {
-        manifest: true,
         outDir: 'public/build',
         emptyOutDir: true,
+        manifest: true,
+        rollupOptions: {
+            output: {
+                entryFileNames: '[name]-[hash].js',
+                chunkFileNames: '[name]-[hash].js',
+                assetFileNames: '[name]-[hash].[ext]',
+            },
+        },
     },
 })
-

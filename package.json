@@ -2,7 +2,8 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build && move public\\build\\.vite\\manifest.json public\\build\\manifest.json"
+
     },
     "devDependencies": {
         "autoprefixer": "^10.4.0",
