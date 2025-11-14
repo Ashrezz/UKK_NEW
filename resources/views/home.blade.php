@@ -10,7 +10,7 @@
                 <p class="muted mt-1">Lihat status peminjaman ruangan Anda dan kelola peminjaman dengan mudah</p>
             </div>
             <div class="flex items-center gap-3">
-                @if(auth()->user()->role !== 'admin')
+                @if(auth()->user()->role !== 'admin'    )
                     <a href="/peminjaman/create" class="btn-primary">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                         <span>Ajukan Peminjaman</span>
