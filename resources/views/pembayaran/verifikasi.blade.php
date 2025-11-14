@@ -8,7 +8,7 @@
             <h1 class="text-3xl sm:text-4xl font-bold text-black mb-2">Verifikasi Pembayaran</h1>
             <p class="text-sm sm:text-base text-black/70">Kelola dan verifikasi pembayaran peminjaman ruangan</p>
         </div>
-        
+
         <div class="mt-4 sm:mt-6">
             @if($peminjaman->isEmpty())
                 <div class="card text-center py-6">

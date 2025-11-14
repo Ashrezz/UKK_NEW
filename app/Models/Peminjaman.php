@@ -42,6 +42,7 @@ class Peminjaman extends Model
      * - If the column contains raw binary image data (BLOB), it will return a data URI.
      * - If the column contains a file path or URL, it will return a storage URL or the URL as-is.
      * - Returns null when no image available.
+     * - Supports both local (public) disk and S3.
      *
      * Usage: $peminjaman->bukti_pembayaran_src
      */
@@ -63,7 +64,10 @@ class Peminjaman extends Model
             $storageKey = substr($storageKey, 7);
         }
 
-        // Try a few possibilities on the public disk:
+        // Detect which disk is configured
+        $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
+
+        // Try a few possibilities:
         // 1) the value as-is (e.g. 'bukti_pembayaran/..' or 'somefile.png')
         // 2) prefixed with bukti_pembayaran/ when value is just a filename
         $candidates = [$storageKey];
@@ -72,9 +76,9 @@ class Peminjaman extends Model
         }
 
         try {
-                foreach ($candidates as $candidate) {
-                if (Storage::disk('public')->exists($candidate)) {
-                    // Serve via controller route so it works even if public/storage symlink isn't present
+            foreach ($candidates as $candidate) {
+                if (Storage::disk($disk)->exists($candidate)) {
+                    // Serve via controller route so it works for both local and S3
                     return route('pembayaran.bukti', ['filename' => basename($candidate)]);
                 }
             }
@@ -82,7 +86,12 @@ class Peminjaman extends Model
             // ignore and fallback
         }
 
-        // Fallback: assume it's a path relative to storage/app/public
+        // Fallback: assume it's a path relative to storage/app/public or S3
+        if ($disk === 's3') {
+            // For S3, return a path that the route will handle
+            return route('pembayaran.bukti', ['filename' => basename($storageKey)]);
+        }
+        
         return asset('storage/' . ltrim($storageKey, '/'));
     }
 }
