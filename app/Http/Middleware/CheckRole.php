@@ -23,6 +23,16 @@ class CheckRole
             }
         }
 
-        return redirect()->route('home')->with('error', 'Unauthorized access.');
+        // If the client expects JSON (API), return 403 JSON response instead of redirecting
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        // Redirect back to the last allowed page if available to prevent forced URL jumps
+        $fallback = session('last_allowed_url', route('home'));
+        return redirect()->to($fallback)->with('error', 'Unauthorized access.');
     }
 }

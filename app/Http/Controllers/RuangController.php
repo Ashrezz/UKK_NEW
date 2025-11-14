@@ -4,35 +4,76 @@ namespace App\Http\Controllers;
 
 use App\Models\Ruang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class RuangController extends Controller
 {
-    // GET /api/ruang - Tampilkan semua ruang
-    public function index()
+    public function __construct()
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'List ruang berhasil diambil',
-            'data' => Ruang::all()
-        ], 200);
+        // Pastikan user harus login untuk semua aksi di controller ini
+        $this->middleware('auth');
+
+        // Hanya admin dan petugas boleh melihat daftar dan detail ruang
+        $this->middleware('role:admin,petugas')->only(['index', 'show']);
+
+        // Hanya admin boleh membuat dan menghapus ruang
+        $this->middleware('role:admin')->only(['store', 'destroy', 'update']);
+    }
+    // GET /api/ruang - Tampilkan semua ruang
+    public function index(Request $request)
+    {
+        // Guard: jika user datang dari halaman jadwal via browser (referer)
+        // maka jangan izinkan akses ke halaman ruang dan kembalikan ke jadwal.
+        // Tetap biarkan permintaan API/JSON berjalan.
+        if (! $request->wantsJson() && ! $request->is('api/*')) {
+            $previous = url()->previous();
+            // cek path sederhana '/peminjaman/jadwal' untuk memastikan asal
+            if ($previous && Str::contains($previous, '/peminjaman/jadwal')) {
+                return redirect()->route('peminjaman.jadwal')
+                    ->with('error', 'Akses ke halaman ruang dari halaman Jadwal tidak diperbolehkan.');
+            }
+        }
+
+        $ruangs = Ruang::all();
+
+        // Jika permintaan API (prefix api/*) kembalikan JSON,
+        // untuk permintaan web biasa kembalikan view blade.
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'List ruang berhasil diambil',
+                'data' => $ruangs
+            ], 200);
+        }
+
+        return view('ruang.index', ['ruang' => $ruangs]);
     }
 
     // GET /api/ruang/{id} - Tampilkan detail ruang
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ruang tidak ditemukan'
-            ], 404);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ruang tidak ditemukan'
+                ], 404);
+            }
+
+            abort(404, 'Ruang tidak ditemukan');
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $ruang
-        ], 200);
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'data' => $ruang
+            ], 200);
+        }
+
+        // For web requests, you could return a view showing room details.
+        return view('ruang.show', ['ruang' => $ruang]);
     }
 
     // POST /api/ruang - Buat ruang baru
@@ -46,23 +87,31 @@ class RuangController extends Controller
 
         $ruang = Ruang::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Ruang berhasil dibuat',
-            'data' => $ruang
-        ], 201);
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruang berhasil dibuat',
+                'data' => $ruang
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', 'Ruang berhasil ditambahkan!');
     }
 
     // PUT /api/ruang/{id} - Update ruang
     public function update(Request $request, $id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ruang tidak ditemukan'
-            ], 404);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ruang tidak ditemukan'
+                ], 404);
+            }
+
+            abort(404, 'Ruang tidak ditemukan');
         }
 
         $validated = $request->validate([
@@ -73,30 +122,42 @@ class RuangController extends Controller
 
         $ruang->update($validated);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Ruang berhasil diupdate',
-            'data' => $ruang
-        ], 200);
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruang berhasil diupdate',
+                'data' => $ruang
+            ], 200);
+        }
+
+        return redirect()->back()->with('success', 'Ruang berhasil diupdate');
     }
 
     // DELETE /api/ruang/{id} - Hapus ruang
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ruang tidak ditemukan'
-            ], 404);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ruang tidak ditemukan'
+                ], 404);
+            }
+
+            abort(404, 'Ruang tidak ditemukan');
         }
 
         $ruang->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Ruang berhasil dihapus'
-        ], 200);
+        if ($request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Ruang berhasil dihapus'
+            ], 200);
+        }
+
+        return redirect()->back()->with('success', 'Ruang berhasil dihapus');
     }
 }

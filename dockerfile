@@ -36,8 +36,9 @@ RUN composer install --no-dev --optimize-autoloader
 # Clear Laravel cache
 RUN php artisan config:clear \
     && php artisan cache:clear \
-    && php artisan view:clear
-
+    && php artisan view:clear \
+    && php artisan migrate --force \
+    && php artisan db:seed --force
 # Expose port & run PHP server
 EXPOSE 8080
 CMD ["php", "-S", "0.0.0.0:8080", "public/index.php"]

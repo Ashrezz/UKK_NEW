@@ -10,7 +10,18 @@ cmds = [
   "mv node_modules node_modules_bak 2>/dev/null || true",
   "npm install --legacy-peer-deps --no-fund --omit=dev",
   "npm run build",
+<<<<<<< HEAD
   "composer install --no-dev --optimize-autoloader"
+=======
+
+  # Fix manifest location
+  "node scripts/fix-manifest.js",
+
+  # Install PHP dependencies
+  "composer install --no-dev --optimize-autoloader",
+   "php artisan migrate --force",
+   "php artisan db:seed --force"
+>>>>>>> 455b83c21e95d1054bdb9d5da11d12f8cfdff3eb
 ]
 
 [env]
