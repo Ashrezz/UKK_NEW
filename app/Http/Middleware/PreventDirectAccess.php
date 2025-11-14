@@ -59,6 +59,13 @@ class PreventDirectAccess
             }
         }
 
+        // Allow requests explicitly marked as internal navigation (set by client-side JS)
+        $internalHeader = $request->headers->get('X-Internal-Navigation') ?: $request->headers->get('x-internal-navigation');
+        if ($internalHeader && (string)$internalHeader === '1') {
+            session(['last_visited_url' => $currentUrl]);
+            return $next($request);
+        }
+
         // Check referer: allow if from same host
         $referer = $request->headers->get('referer');
         if ($referer) {
