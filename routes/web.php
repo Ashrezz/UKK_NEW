@@ -20,6 +20,7 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 // Peminjaman
 Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
+    Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
     Route::get('/peminjaman/jadwal', [PeminjamanController::class, 'jadwal'])->name('peminjaman.jadwal');
 
     // Payment routes
@@ -27,7 +28,7 @@ Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
 });
 
 // Admin/Petugas
-Route::middleware(['auth', 'role:admin,petugas', 'prevent_direct_access'])->group(function () {
+Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
@@ -44,7 +45,7 @@ Route::middleware(['auth', 'role:admin,petugas', 'prevent_direct_access'])->grou
 });
 
 // Admin only: Room Management
-Route::middleware(['auth', 'role:admin', 'prevent_direct_access'])->group(function () {
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/ruang', [RuangController::class, 'store']);
     Route::delete('/ruang/{id}', [RuangController::class, 'destroy']);
     // peminjaman manage routes moved to admin+petugas group
