@@ -49,9 +49,13 @@ class RequireSidebarNavigation
             return $next($request);
         }
 
-        // Allow if the short-lived cookie is present (set by sidebar click)
         // Allow if the short-lived cookie is present (set by sidebar click) or query param is present
         if ($request->cookie('allowed_nav') || $request->query('allowed_nav')) {
+            // If we have allowed_nav query param, redirect to clean URL (without the param) to hide it
+            if ($request->query('allowed_nav')) {
+                $cleanUrl = $request->url(); // URL without query string
+                return redirect()->to($cleanUrl);
+            }
             return $next($request);
         }
 
