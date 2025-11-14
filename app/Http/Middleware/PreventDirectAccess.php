@@ -29,26 +29,25 @@ class PreventDirectAccess
             return $next($request);
         }
 
-        // Public paths that may be accessed directly
-        $publicPatterns = [
-            '/',
-            'login',
-            'register',
-            'logout',
-            'info-pengajuan',
-        ];
+        // Public/unauthenticated paths that may be accessed directly
+        $path = $request->path();
+        $publicPaths = ['', 'login', 'register', 'logout', 'info-pengajuan'];
 
-        foreach ($publicPatterns as $p) {
-            if ($request->is($p) || $request->is($p.'/*')) {
+        if (in_array($path, $publicPaths)) {
+            return $next($request);
+        }
+
+        // Also allow paths starting with these
+        foreach (['login/', 'register/', 'info-pengajuan/'] as $p) {
+            if (strpos($path, $p) === 0) {
                 return $next($request);
             }
         }
 
-        $currentUrl = $request->fullUrl();
         $appHost = $request->getHost();
+        $referer = $request->headers->get('referer');
 
         // Check referer: allow if from same host (normal browser link clicks include referer)
-        $referer = $request->headers->get('referer');
         if ($referer) {
             $refererHost = parse_url($referer, PHP_URL_HOST);
             if ($refererHost === $appHost) {
@@ -56,7 +55,12 @@ class PreventDirectAccess
             }
         }
 
-        // Otherwise block direct access (typing URL)
+        // If no referer AND user is authenticated, allow (user may have JS disabled or privacy settings)
+        if (auth()->check()) {
+            return $next($request);
+        }
+
+        // Otherwise block direct access (typing URL without login)
         return $this->redirectBackWithMessage();
     }
 
