@@ -47,12 +47,6 @@ class PreventDirectAccess
         $currentUrl = $request->fullUrl();
         $appHost = $request->getHost();
 
-        // Allow requests explicitly marked as internal navigation (set by client-side JS)
-        $internalHeader = $request->headers->get('X-Internal-Navigation') ?: $request->headers->get('x-internal-navigation');
-        if ($internalHeader && (string)$internalHeader === '1') {
-            return $next($request);
-        }
-
         // Check referer: allow if from same host (normal browser link clicks include referer)
         $referer = $request->headers->get('referer');
         if ($referer) {
@@ -62,7 +56,7 @@ class PreventDirectAccess
             }
         }
 
-        // Otherwise block direct access (typing URL) — no session/previous fallback here
+        // Otherwise block direct access (typing URL)
         return $this->redirectBackWithMessage();
     }
 
