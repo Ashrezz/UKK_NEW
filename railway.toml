@@ -28,9 +28,9 @@ cmds = [
   "node scripts/fix-manifest.js",
 
   # Install PHP dependencies
-  "composer install --no-dev --optimize-autoloader"
+  "composer install --no-dev --optimize-autoloader",
    "php artisan migrate --force",
-  "php artisan db:seed --force"
+   "php artisan db:seed --force"
 ]
 
 # Environment variables
