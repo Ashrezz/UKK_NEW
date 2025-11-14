@@ -70,10 +70,10 @@ return new class extends Migration
                 created_at TIMESTAMP NULL,
                 updated_at TIMESTAMP NULL,
                 deleted_at TIMESTAMP NULL,
-                
+
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (ruang_id) REFERENCES ruang(id) ON DELETE CASCADE,
-                
+
                 INDEX idx_user_id (user_id),
                 INDEX idx_ruang_id (ruang_id),
                 INDEX idx_tanggal (tanggal),
@@ -115,7 +115,7 @@ return new class extends Migration
     public function down(): void
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
+
         Schema::dropIfExists('pembatalans');
         Schema::dropIfExists('peminjaman');
         Schema::dropIfExists('ruang');
