@@ -58,6 +58,52 @@
     </tfoot>
   </table>
 
-  <div style="margin-top:18px; font-size:12px; color:#666">Dicetak: {{ now()->toDateTimeString() }}</div>
+  <div style="margin-top:18px; font-size:12px; color:#666">Dicetak: <span id="printed_at">{{ now()->toDateTimeString() }}</span></div>
+
+  <script>
+    // Update the printed timestamp to the client's local time when the page loads
+    // and just before printing so the printed page shows the actual local print time.
+    function setPrintedAtToNow() {
+      try {
+        const el = document.getElementById('printed_at');
+        if (!el) return;
+        const now = new Date();
+        // Format: YYYY-MM-DD HH:mm:ss (local)
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        el.textContent = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Set on load
+    document.addEventListener('DOMContentLoaded', function(){ setPrintedAtToNow(); });
+
+    // Update right before print (most browsers support beforeprint)
+    if (window.matchMedia) {
+      window.addEventListener('beforeprint', setPrintedAtToNow);
+    } else {
+      window.onbeforeprint = setPrintedAtToNow;
+    }
+
+    // For safety, also update when user explicitly clicks a print button (if any)
+    function bindPrintButtons(){
+      document.querySelectorAll('button.print, a.print').forEach(btn => {
+        btn.addEventListener('click', function(e){
+          // update timestamp then allow default action (open print dialog)
+          setPrintedAtToNow();
+          // small delay to ensure update
+          setTimeout(() => window.print(), 120);
+          e.preventDefault();
+        });
+      });
+    }
+    document.addEventListener('DOMContentLoaded', bindPrintButtons);
+  </script>
 </body>
 </html>
