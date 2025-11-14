@@ -2,8 +2,6 @@ import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
 
 export default defineConfig({
-    cacheDir: './.vitecache',
-
     plugins: [
         laravel({
             input: [
@@ -12,6 +10,7 @@ export default defineConfig({
                 'resources/js/app.js'
             ],
             refresh: true,
+            buildDirectory: 'build', // WAJIB DAN BENAR
         }),
     ],
 
@@ -19,10 +18,6 @@ export default defineConfig({
         manifest: true,
         outDir: 'public/build',
         emptyOutDir: true,
-        rollupOptions: {
-            output: {
-                manualChunks: undefined,
-            },
-        },
     },
 })
+
