@@ -132,7 +132,12 @@
             if(overlay) overlay.addEventListener('click', function(e){ e.preventDefault(); closeSidebar(); });
 
             // close when clicking sidebar links (mobile)
-            sidebar.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setTimeout(closeSidebar, 80)));
+            // Also write a small cookie 'sidebar_nav' so middleware that requires sidebar navigation
+            // can detect a legitimate sidebar click and allow the navigation.
+            sidebar.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+                try { document.cookie = 'sidebar_nav=1; path=/'; } catch(e) {}
+                setTimeout(closeSidebar, 80);
+            }));
             window.addEventListener('resize', () => { if(window.innerWidth >= 768) closeSidebar(); });
         });
     </script>
