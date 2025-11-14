@@ -48,15 +48,18 @@ class AuthController extends Controller
     public function apiLogin(Request $request)
     {
         $validated = $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
+        $identifier = $validated['email'];
+        $password = $validated['password'];
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        $user = User::where('email', $identifier)->orWhere('username', $identifier)->first();
+
+        if (!$user || !Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah'],
+                'email' => ['Username/Email atau password salah'],
             ]);
         }
 
@@ -102,18 +105,34 @@ class AuthController extends Controller
     {
         return view('auth.login');
     }
-
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $identifier = $request->input('email');
+        $password = $request->input('password');
 
-        if (Auth::attempt($credentials)) {
+        // Try login dengan email atau username
+        if ($this->attemptLogin($identifier, $password)) {
             return redirect()->route('home');
         }
 
-        return back()->with('error', 'Email atau password salah');
+        return back()->with('error', 'Username/Email atau password salah');
     }
 
+    // Helper: Try login with username or email
+    private function attemptLogin($identifier, $password)
+    {
+        // Try email first
+        if (Auth::attempt(['email' => $identifier, 'password' => $password])) {
+            return true;
+        }
+
+        // Try username
+        if (Auth::attempt(['username' => $identifier, 'password' => $password])) {
+            return true;
+        }
+
+        return false;
+    }
     public function registerForm()
     {
         return view('auth.register');
@@ -122,13 +141,15 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'email' => 'required|unique:users',
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|unique:users,username|min:3|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6|confirmed',
         ]);
 
         User::create([
             'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'pengunjung',
