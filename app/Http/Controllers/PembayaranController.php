@@ -15,21 +15,25 @@ class PembayaranController extends Controller
         ]);
 
         $peminjaman = Peminjaman::findOrFail($id);
-        
+
         if ($request->hasFile('bukti_pembayaran')) {
             // Hapus file lama jika ada
-            if ($peminjaman->bukti_pembayaran) {
-                Storage::delete('public/bukti_pembayaran/' . $peminjaman->bukti_pembayaran);
+            if ($peminjaman->bukti_pembayaran && strpos($peminjaman->bukti_pembayaran, 'bukti_pembayaran/') === 0) {
+                try {
+                    Storage::disk('public')->delete($peminjaman->bukti_pembayaran);
+                } catch (\Throwable $e) {
+                    // ignore deletion errors
+                }
             }
 
-            // Simpan file baru
+            // Simpan file baru ke public disk dengan relative path
             $file = $request->file('bukti_pembayaran');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('public/bukti_pembayaran', $filename);
+            $relativePath = $file->storeAs('bukti_pembayaran', $filename, 'public');
 
-            // Update database
+            // Update database dengan path relative dalam public disk
             $peminjaman->update([
-                'bukti_pembayaran' => $filename,
+                'bukti_pembayaran' => $relativePath,
                 'status_pembayaran' => 'menunggu_verifikasi',
                 'waktu_pembayaran' => now()
             ]);
@@ -47,7 +51,7 @@ class PembayaranController extends Controller
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         return view('pembayaran.verifikasi', compact('peminjaman'));
     }
 
@@ -113,7 +117,16 @@ class PembayaranController extends Controller
             'bukti_pembayaran.required' => 'Bukti pembayaran harus diunggah berupa file gambar (jpg, png)'
         ]);
 
-        $fileContent = file_get_contents($request->file('bukti_pembayaran')->getRealPath());
+        // Calculate booking duration and cost
+        $mulai = strtotime($request->jam_mulai);
+        $selesai = strtotime($request->jam_selesai);
+        $durasi = ceil(($selesai - $mulai) / 3600); // Duration in hours
+        $biaya = $durasi * 50000; // Rp. 50.000 per hour
+
+        // Simpan file ke public disk dengan relative path
+        $file = $request->file('bukti_pembayaran');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $relativePath = $file->storeAs('bukti_pembayaran', $filename, 'public');
 
         $peminjaman = Peminjaman::create([
             'user_id' => auth()->id(),
@@ -123,8 +136,10 @@ class PembayaranController extends Controller
             'jam_selesai' => $request->jam_selesai,
             'keperluan' => $request->keperluan,
             'status' => 'pending',
+            'biaya' => $biaya,
             'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_pembayaran' => $fileContent
+            'bukti_pembayaran' => $relativePath,
+            'waktu_pembayaran' => now()
         ]);
 
         return redirect()->route('home')->with('success', 'Pengajuan peminjaman berhasil dibuat!');
