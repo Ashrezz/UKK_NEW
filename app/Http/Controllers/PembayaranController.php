@@ -91,13 +91,13 @@ class PembayaranController extends Controller
         // Sanitize filename
         $filename = basename($filename);
 
-        // ✅ PRIMARY: Coba serve dari BLOB database
-        // Cari record berdasarkan bukti_pembayaran_name atau ID
+        // Try to find a peminjaman record that references this filename
         $peminjaman = Peminjaman::where('bukti_pembayaran_name', $filename)
+            ->orWhere('bukti_pembayaran', 'like', '%' . $filename)
             ->orWhere('id', preg_replace('/[^0-9]/', '', $filename))
-            ->whereNotNull('bukti_pembayaran_blob')
             ->first();
 
+        // If we have a record and it already has a BLOB, serve it
         if ($peminjaman && !empty($peminjaman->bukti_pembayaran_blob)) {
             $blob = $peminjaman->bukti_pembayaran_blob;
             $mime = $peminjaman->bukti_pembayaran_mime ?? 'image/jpeg';
@@ -108,33 +108,119 @@ class PembayaranController extends Controller
                 ->header('Cache-Control', 'public, max-age=3600');
         }
 
-        // FALLBACK: Coba serve dari file storage
+        // If we have a record but no BLOB, attempt to fetch the original file (storage or URL)
         $disk = config('filesystems.default') === 's3' ? 's3' : 'public';
+        $candidates = [];
 
-        $candidates = [
-            $filename,
-            'bukti_pembayaran/' . $filename,
-        ];
-
-        foreach ($candidates as $candidate) {
-            if (Storage::disk($disk)->exists($candidate)) {
-                try {
-                    $stream = Storage::disk($disk)->get($candidate);
-                    $mime = 'image/jpeg';
-                    if (preg_match('/\.(jpg|jpeg|png|gif)$/i', $candidate)) {
-                        $mime = 'image/' . (preg_match('/\.jpg|jpeg$/i', $candidate) ? 'jpeg' :
-                                (preg_match('/\.png$/i', $candidate) ? 'png' : 'gif'));
+        if ($peminjaman) {
+            $orig = $peminjaman->bukti_pembayaran;
+            if ($orig) {
+                // If it's a full URL, try to fetch it directly
+                if (is_string($orig) && preg_match('/^https?:\/\//', $orig)) {
+                    $candidates[] = $orig;
+                } else {
+                    // normalize
+                    $path = $orig;
+                    if (strpos($path, 'public/') === 0) {
+                        $path = substr($path, 7);
                     }
+                    $candidates[] = $path;
+                    $candidates[] = 'bukti_pembayaran/' . basename($path);
+                    $candidates[] = basename($path);
+                }
+            } else {
+                // fallback to filename candidates
+                $candidates[] = $filename;
+                $candidates[] = 'bukti_pembayaran/' . $filename;
+            }
+        } else {
+            // No DB record - try generic storage locations
+            $candidates[] = $filename;
+            $candidates[] = 'bukti_pembayaran/' . $filename;
+        }
+
+        // Try disks first (public or s3)
+        foreach ($candidates as $candidate) {
+            try {
+                // If candidate looks like a URL, fetch via HTTP
+                if (preg_match('/^https?:\/\//', $candidate)) {
+                    try {
+                        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+                        $contents = @file_get_contents($candidate, false, $ctx);
+                        if ($contents !== false) {
+                            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                            $mime = $finfo->buffer($contents) ?: 'image/jpeg';
+                            // Save into DB if we have a record
+                            if ($peminjaman) {
+                                $peminjaman->bukti_pembayaran_blob = $contents;
+                                $peminjaman->bukti_pembayaran_mime = $mime;
+                                $peminjaman->bukti_pembayaran_name = basename($candidate);
+                                $peminjaman->bukti_pembayaran_size = strlen($contents);
+                                $peminjaman->save();
+                            }
+
+                            return response($contents, 200)
+                                ->header('Content-Type', $mime)
+                                ->header('Content-Length', strlen($contents));
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::warning("HTTP fetch failed for {$candidate}: " . $e->getMessage());
+                    }
+                    continue;
+                }
+
+                // Try storage disk
+                if (Storage::disk($disk)->exists($candidate)) {
+                    $stream = Storage::disk($disk)->get($candidate);
+                    $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->buffer($stream) ?: 'image/jpeg';
+
+                    // Save into DB if we have a record
+                    if ($peminjaman) {
+                        $peminjaman->bukti_pembayaran_blob = $stream;
+                        $peminjaman->bukti_pembayaran_mime = $mime;
+                        $peminjaman->bukti_pembayaran_name = basename($candidate);
+                        $peminjaman->bukti_pembayaran_size = strlen($stream);
+                        $peminjaman->save();
+                    }
+
                     return response($stream, 200)
                         ->header('Content-Type', $mime)
                         ->header('Content-Length', strlen($stream));
-                } catch (\Throwable $e) {
-                    \Log::warning("Error reading {$candidate} from {$disk}: " . $e->getMessage());
                 }
+            } catch (\Throwable $e) {
+                // ignore and continue
+                \Log::warning("Error attempting to fetch candidate {$candidate}: " . $e->getMessage());
             }
         }
 
-        // File tidak ditemukan
+        // Also try common file locations on disk
+        $localPaths = [
+            storage_path('app/public/bukti_pembayaran/' . $filename),
+            public_path('bukti_pembayaran/' . $filename),
+        ];
+
+        foreach ($localPaths as $local) {
+            if (file_exists($local)) {
+                $contents = file_get_contents($local);
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->buffer($contents) ?: 'image/jpeg';
+
+                if ($peminjaman) {
+                    $peminjaman->bukti_pembayaran_blob = $contents;
+                    $peminjaman->bukti_pembayaran_mime = $mime;
+                    $peminjaman->bukti_pembayaran_name = basename($local);
+                    $peminjaman->bukti_pembayaran_size = strlen($contents);
+                    $peminjaman->save();
+                }
+
+                return response($contents, 200)
+                    ->header('Content-Type', $mime)
+                    ->header('Content-Length', strlen($contents));
+            }
+        }
+
+        // Not found anywhere
         \Log::warning("bukti_pembayaran file not found: {$filename}");
 
         return response()->json([
