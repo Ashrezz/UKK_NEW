@@ -36,11 +36,6 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            // Require that navigation originated from the sidebar (sets a short-lived cookie or query param)
-            \App\Http\Middleware\RequireSidebarNavigation::class,
-            // Store the last visited allowed URL for authenticated users
-            \App\Http\Middleware\StoreLastVisited::class,
-
         ],
 
 
@@ -71,5 +66,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\CheckRole::class,
+        'prevent_direct_access' => \App\Http\Middleware\PreventDirectAccess::class,
     ];
 }

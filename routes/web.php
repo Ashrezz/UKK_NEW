@@ -21,13 +21,13 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
     Route::get('/peminjaman/jadwal', [PeminjamanController::class, 'jadwal'])->name('peminjaman.jadwal');
-    
+
     // Payment routes
     Route::post('/pembayaran/{id}/upload', [PembayaranController::class, 'uploadBukti'])->name('pembayaran.upload');
 });
 
 // Admin/Petugas
-Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
+Route::middleware(['auth', 'role:admin,petugas', 'prevent_direct_access'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');

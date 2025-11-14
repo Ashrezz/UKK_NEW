@@ -138,33 +138,4 @@
     </script>
 </body>
 
-<script>
-// When a sidebar link is clicked, set a cookie to allow the next navigation.
-document.addEventListener('DOMContentLoaded', function(){
-    document.querySelectorAll('.sidebar-link').forEach(function(el){
-        el.addEventListener('click', function(e){
-            // Respect modifier keys (open in new tab) and non-left clicks
-            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-                return;
-            }
-
-            e.preventDefault();
-
-            // Set a persistent cookie to mark navigation as allowed from sidebar
-            // This cookie will be checked by RequireSidebarNavigation middleware
-            document.cookie = 'sidebar_nav=1; max-age=120; path=/; samesite=Lax';
-
-            // Navigate after a tiny delay to ensure cookie is set
-            const href = el.getAttribute('href');
-            setTimeout(function(){
-                if (el.target === '_blank') {
-                    window.open(href, '_blank');
-                } else {
-                    window.location.href = href;
-                }
-            }, 50);
-        });
-    });
-});
-</script>
 </html>
