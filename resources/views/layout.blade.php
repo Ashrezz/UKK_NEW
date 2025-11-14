@@ -150,19 +150,23 @@ document.addEventListener('DOMContentLoaded', function(){
 
             e.preventDefault();
 
-            // Set cookie valid for a short time (120 seconds) and with SameSite Lax
-            document.cookie = 'allowed_nav=1; max-age=120; path=/; samesite=Lax';
-
-            // Ensure cookie is persisted before navigating. Use a tiny delay.
+            // Prefer a query param that the server can read immediately to allow navigation
             const href = el.getAttribute('href');
-            setTimeout(function(){
+            try {
+                const url = new URL(href, window.location.origin);
+                url.searchParams.set('allowed_nav', '1');
+                const finalHref = url.toString();
+
                 // If the link has target _blank, open in new tab
                 if (el.target === '_blank') {
-                    window.open(href, '_blank');
+                    window.open(finalHref, '_blank');
                 } else {
-                    window.location.href = href;
+                    window.location.href = finalHref;
                 }
-            }, 50);
+            } catch (e) {
+                // fallback: navigate as-is
+                window.location.href = href;
+            }
         });
     });
 });
