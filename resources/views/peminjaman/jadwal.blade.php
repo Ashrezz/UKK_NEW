@@ -19,6 +19,11 @@
         <div class="card p-6 mb-6">
             <h2 class="text-2xl font-semibold">Jadwal Peminjaman Ruangan</h2>
             <p class="muted mt-1">Daftar seluruh jadwal peminjaman ruangan yang telah diajukan</p>
+            @if(auth()->check() && in_array(auth()->user()->role, ['admin', 'petugas']))
+                <div class="mt-4">
+                    <a href="{{ route('peminjaman.laporan', ['month' => now()->format('Y-m')]) }}" class="btn-primary inline-flex items-center gap-2">Generate Laporan Bulanan ({{ now()->format('F Y') }})</a>
+                </div>
+            @endif
         </div>
 
         <!-- Table Card -->

@@ -31,6 +31,8 @@ Route::middleware(['auth', 'role:admin,petugas', 'prevent_direct_access'])->grou
     Route::get('/ruang', [RuangController::class, 'index']);
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
+    // Laporan peminjaman (admin / petugas)
+    Route::get('/peminjaman/laporan', [PeminjamanController::class, 'laporan'])->name('peminjaman.laporan');
     // Manual cleanup trigger (admin or petugas)
     Route::post('/peminjaman/cleanup', [PeminjamanController::class, 'cleanup'])->name('peminjaman.cleanup');
     Route::post('/peminjaman/{id}/restore', [PeminjamanController::class, 'restore'])->name('peminjaman.restore');

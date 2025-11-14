@@ -82,7 +82,7 @@ class RuangController extends Controller
         $validated = $request->validate([
             'nama_ruang' => 'required|string|max:255',
             'kapasitas' => 'required|integer|min:1',
-            'lokasi' => 'required|string'
+            'deskripsi' => 'required|string'
         ]);
 
         $ruang = Ruang::create($validated);
@@ -117,7 +117,7 @@ class RuangController extends Controller
         $validated = $request->validate([
             'nama_ruang' => 'string|max:255',
             'kapasitas' => 'integer|min:1',
-            'lokasi' => 'string'
+            'deskripsi' => 'string'
         ]);
 
         $ruang->update($validated);

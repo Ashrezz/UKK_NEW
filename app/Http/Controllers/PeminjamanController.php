@@ -6,6 +6,7 @@ use App\Models\Peminjaman;
 use App\Models\Ruang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PeminjamanController extends Controller
 {
@@ -17,7 +18,7 @@ class PeminjamanController extends Controller
 
     private $daysOfWeek = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     private $timeSlots = [
-        '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00', 
+        '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
         '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00'
     ];
 
@@ -37,7 +38,7 @@ class PeminjamanController extends Controller
         // Get all bookings for this room for the current week
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
-        
+
         $bookings = Peminjaman::where('ruang_id', $ruang->id)
             ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
             ->get();
@@ -46,7 +47,7 @@ class PeminjamanController extends Controller
         foreach ($bookings as $booking) {
             $day = date('l', strtotime($booking->tanggal));
             $dayIndo = $this->getDayInIndonesian($day);
-            
+
             $timeSlot = $booking->jam_mulai . '-' . $booking->jam_selesai;
             if (isset($schedule[$dayIndo][$timeSlot])) {
                 $schedule[$dayIndo][$timeSlot] = [
@@ -93,7 +94,7 @@ class PeminjamanController extends Controller
         // Get all bookings for the current week
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
-        
+
         $weeklyBookings = Peminjaman::with(['ruang', 'user'])
             ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
             ->whereIn('status', ['pending', 'disetujui'])
@@ -109,15 +110,15 @@ class PeminjamanController extends Controller
 
             $day = $this->getDayInIndonesian(date('l', strtotime($booking->tanggal)));
             $timeSlot = substr($booking->jam_mulai, 0, 5) . '-' . substr($booking->jam_selesai, 0, 5);
-            
+
             if (!isset($regularSchedule[$day])) {
                 $regularSchedule[$day] = [];
             }
-            
+
             if (!isset($regularSchedule[$day][$timeSlot])) {
                 $regularSchedule[$day][$timeSlot] = [];
             }
-            
+
             $regularSchedule[$day][$timeSlot][] = [
                 'tanggal' => $booking->tanggal,
                 'ruang' => $booking->ruang->nama_ruang,
@@ -146,11 +147,11 @@ class PeminjamanController extends Controller
             }
 
             $bookings = $query->get();
-            
+
             foreach ($bookings as $booking) {
                 $startTime = strtotime($booking->jam_mulai);
                 $endTime = strtotime($booking->jam_selesai);
-                
+
                 while ($startTime < $endTime) {
                     $timeSlot = date('H:i', $startTime) . '-' . date('H:i', strtotime('+1 hour', $startTime));
                     $bookedTimeSlots[$timeSlot] = [
@@ -289,7 +290,7 @@ class PeminjamanController extends Controller
             ->where('status_pembayaran', 'menunggu_verifikasi')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         return view('peminjaman.verifikasi-pembayaran', compact('peminjaman'));
     }
 
@@ -334,7 +335,7 @@ class PeminjamanController extends Controller
             ->where('tanggal', $date)
             ->whereIn('status', ['pending', 'disetujui'])
             ->get();
-        
+
         return response()->json($peminjaman);
     }
 
@@ -413,5 +414,89 @@ class PeminjamanController extends Controller
         }
 
         return back()->with('success', "Cleanup selesai. Soft-deleted {$count} booking lama.");
+    }
+
+    /**
+     * Generate monthly report of peminjaman per room and total revenue.
+     * If the PDF package (barryvdh/laravel-dompdf) is installed, returns a PDF download.
+     * Otherwise returns the HTML view so the user can confirm output or install the package.
+     *
+     * Optional query param: month=YYYY-MM (defaults to current month)
+     */
+    public function laporan(Request $request)
+    {
+        $month = $request->query('month', now()->format('Y-m'));
+        // parse start and end of month
+        try {
+            $start = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth()->format('Y-m-d');
+            $end = \Carbon\Carbon::createFromFormat('Y-m', $month)->endOfMonth()->format('Y-m-d');
+        } catch (\Exception $e) {
+            // fallback to current month if parse fails
+            $start = now()->startOfMonth()->format('Y-m-d');
+            $end = now()->endOfMonth()->format('Y-m-d');
+            $month = now()->format('Y-m');
+        }
+
+        // Aggregate: count peminjaman per ruang and sum revenue only where payment is verified/lunas
+        // Assumption: revenue counts peminjaman where status_pembayaran is 'terverifikasi' or 'lunas'
+        $stats = DB::table('peminjaman')
+            ->select('ruang_id', DB::raw('count(*) as total_peminjaman'), DB::raw("sum(case when status_pembayaran in ('terverifikasi','lunas') then COALESCE(biaya,0) else 0 end) as total_revenue"))
+            ->whereBetween('tanggal', [$start, $end])
+            ->groupBy('ruang_id')
+            ->get();
+
+        // Attach ruang models/names to stats
+        $ruangIds = $stats->pluck('ruang_id')->all();
+        $ruangs = \App\Models\Ruang::whereIn('id', $ruangIds)->get()->keyBy('id');
+
+        $totalRevenue = 0;
+        $totalBookings = 0;
+        $rows = [];
+
+        foreach ($stats as $s) {
+            $ruang = $ruangs->get($s->ruang_id);
+            $rows[] = [
+                'ruang' => $ruang ? $ruang->nama_ruang : 'Ruang #' . $s->ruang_id,
+                'total_peminjaman' => (int) $s->total_peminjaman,
+                'total_revenue' => (float) $s->total_revenue,
+            ];
+            $totalRevenue += (float) $s->total_revenue;
+            $totalBookings += (int) $s->total_peminjaman;
+        }
+
+        $data = [
+            'month' => $month,
+            'start' => $start,
+            'end' => $end,
+            'rows' => $rows,
+            'totalRevenue' => $totalRevenue,
+            'totalBookings' => $totalBookings,
+        ];
+
+        // If PDF generator (barryvdh/laravel-dompdf) is available, stream a PDF.
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class) || class_exists(\Barryvdh\DomPDF\PDF::class) || class_exists('\PDF')) {
+            try {
+                // Prefer the facade alias PDF if available
+                if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
+                } else if (class_exists('\PDF')) {
+                    $pdf = \PDF::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
+                } else {
+                    // fallback to the other class name
+                    $pdf = \Barryvdh\DomPDF\PDF::loadView('peminjaman.laporan', $data)->setPaper('a4', 'portrait');
+                }
+                $filename = 'laporan-peminjaman-' . $month . '.pdf';
+                return $pdf->download($filename);
+            } catch (\Throwable $e) {
+                // If PDF generation fails, fall through to return HTML view with warning
+                \Log::error('PDF generation failed: ' . $e->getMessage());
+                $data['pdf_error'] = $e->getMessage();
+                return view('peminjaman.laporan', $data);
+            }
+        }
+
+        // PDF lib not installed — return HTML so user can preview the report and install the package.
+        $data['pdf_missing'] = true;
+        return view('peminjaman.laporan', $data);
     }
 }
