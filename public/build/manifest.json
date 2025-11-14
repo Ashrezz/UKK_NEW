@@ -1,0 +1,22 @@
+{
+  "resources/css/app.css": {
+    "file": "app-l0sNRNKZ.js",
+    "name": "app",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/layout-redesign.css": {
+    "file": "layout-redesign-DmHFhpOT.css",
+    "src": "resources/css/layout-redesign.css",
+    "isEntry": true,
+    "names": [
+      "layout-redesign.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "app-CAiCLEjY.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}
