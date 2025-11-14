@@ -32,6 +32,9 @@ Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
 // PRIMARY: By ID (most reliable) - langsung query BLOB by ID
 Route::get('/pembayaran/bukti/blob/{id}', [PembayaranController::class, 'showBuktiBlob'])->name('pembayaran.bukti.blob');
 
+// DEBUG: Check BLOB metadata for a record
+Route::get('/pembayaran/debug/blob/{id}', [PembayaranController::class, 'debugBlob'])->name('pembayaran.debug.blob');
+
 // FALLBACK: By filename
 Route::get('/pembayaran/bukti/{filename}', [PembayaranController::class, 'showBukti'])->name('pembayaran.bukti');
 

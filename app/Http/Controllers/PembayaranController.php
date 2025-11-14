@@ -265,6 +265,9 @@ class PembayaranController extends Controller
                 $mime = $finfo->buffer($blob) ?: 'image/jpeg';
             }
 
+            // Log for debugging
+            \Log::info('Serving BLOB for peminjaman ' . $id . ': size=' . strlen($blob) . ' bytes, mime=' . $mime);
+
             // Return binary image with proper headers
             return response($blob, 200)
                 ->header('Content-Type', $mime)
@@ -276,6 +279,34 @@ class PembayaranController extends Controller
             \Log::error("Error serving BLOB for peminjaman {$id}: " . $e->getMessage());
             return response()->json(['error' => 'Gagal mengambil bukti pembayaran'], 500);
         }
+    }
+
+    /**
+     * Debug endpoint: show BLOB metadata for a record (JSON)
+     * Usage: /pembayaran/debug/blob/{id}
+     */
+    public function debugBlob($id)
+    {
+        $p = Peminjaman::withTrashed()->find($id);
+        
+        if (!$p) {
+            return response()->json(['error' => 'Record not found', 'id' => $id], 404);
+        }
+
+        $blobSize = $p->bukti_pembayaran_blob ? strlen($p->bukti_pembayaran_blob) : 0;
+        $blobPresent = !empty($p->bukti_pembayaran_blob);
+
+        return response()->json([
+            'id' => $p->id,
+            'deleted_at' => $p->deleted_at,
+            'bukti_pembayaran' => $p->bukti_pembayaran,
+            'bukti_pembayaran_mime' => $p->bukti_pembayaran_mime,
+            'bukti_pembayaran_name' => $p->bukti_pembayaran_name,
+            'bukti_pembayaran_size' => $p->bukti_pembayaran_size,
+            'blob_present' => $blobPresent,
+            'blob_actual_size' => $blobSize,
+            'accessor_url' => $p->bukti_pembayaran_src,
+        ]);
     }
 
     public function store(Request $request)
