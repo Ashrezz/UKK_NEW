@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
 
-// Info Pengajuan (kebijakan pembayaran/refund)
-Route::get('/info-pengajuan', function () { return view('info-pengajuan'); })->name('info-pengajuan');
-
 // Login & Register
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);

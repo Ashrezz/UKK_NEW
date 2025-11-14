@@ -47,7 +47,6 @@
             @auth
                 <a href="{{ route('home') }}" class="sidebar-link {{ request()->routeIs('home') ? 'active' : ''}}">Home</a>
                 <a href="{{ route('peminjaman.jadwal') }}" class="sidebar-link {{ request()->routeIs('peminjaman.jadwal') ? 'active' : ''}}">Jadwal</a>
-                <a href="{{ route('info-pengajuan') }}" class="sidebar-link {{ request()->routeIs('info-pengajuan') ? 'active' : ''}}">Info Pengajuan</a>
 
                 @if(auth()->user()->role !== 'admin')
                     <a href="{{ route('peminjaman.create') }}" class="sidebar-link {{ request()->routeIs('peminjaman.create') ? 'active' : ''}}">Ajukan Pinjam</a>
@@ -65,7 +64,6 @@
                 <a href="{{ route('logout') }}" class="sidebar-link text-red-600">Logout</a>
             @else
                 <a href="{{ route('login') }}" class="sidebar-link {{ request()->routeIs('login') ? 'active' : ''}}">Login</a>
-                <a href="{{ route('info-pengajuan') }}" class="sidebar-link {{ request()->routeIs('info-pengajuan') ? 'active' : ''}}">Info Pengajuan</a>
                 <a href="/register" class="sidebar-link {{ request()->is('register') ? 'active' : ''}}">Register</a>
             @endauth
         </nav>

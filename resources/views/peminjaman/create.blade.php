@@ -188,7 +188,7 @@
                 </div>
             </div>
 
-            <!-- Informasi Card -->
+            <!-- Informasi Penting & Kebijakan Pembayaran -->
             <div class="card">
                 <div class="px-6 py-4 border-b">
                     <h3 class="font-medium">Informasi Penting</h3>
@@ -212,6 +212,33 @@
                             <span>Tanggung jawab atas kerusakan ruang</span>
                         </li>
                     </ul>
+                </div>
+            </div>
+
+            <!-- Kebijakan Pembayaran Card -->
+            <div class="card">
+                <div class="px-6 py-4 border-b">
+                    <h3 class="font-medium">Kebijakan Pembayaran & Refund</h3>
+                </div>
+                <div class="p-6 space-y-4 text-sm muted">
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Jika Pengajuan Disetujui</h4>
+                        <ul class="list-disc list-inside space-y-1 text-xs">
+                            <li>Pengajuan yang disetujui otomatis menandakan pembayaran terverifikasi</li>
+                            <li>Anda dapat mengakses detail booking via halaman peminjaman</li>
+                        </ul>
+                    </div>
+                    <hr class="border-gray-200">
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Jika Pengajuan Ditolak</h4>
+                        <ul class="list-disc list-inside space-y-1 text-xs">
+                            <li><strong>Down Payment (DP):</strong> DP tidak dapat dikembalikan jika pembatalan oleh Anda sendiri</li>
+                            <li><strong>Pembatalan Admin:</strong> Admin akan memproses pengembalian dana</li>
+                            <li><strong>Penolakan Internal:</strong> Admin akan memberikan keterangan dan dapat mengembalikan pembayaran</li>
+                        </ul>
+                    </div>
+                    <hr class="border-gray-200">
+                    <p class="text-xs italic">Pertanyaan tentang refund? Hubungi admin atau buka tiket pembatalan di akun Anda</p>
                 </div>
             </div>
         </div>
