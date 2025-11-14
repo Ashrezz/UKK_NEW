@@ -8,20 +8,28 @@ use Illuminate\Http\Request;
 class RuangController extends Controller
 {
     // GET /api/ruang - Tampilkan semua ruang
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'List ruang berhasil diambil',
-            'data' => Ruang::all()
-        ], 200);
+        $ruangs = Ruang::all();
+
+        // Jika permintaan dari API (JSON) kembalikan respons JSON,
+        // jika dari browser kembalikan view blade untuk halaman kelola ruang.
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'List ruang berhasil diambil',
+                'data' => $ruangs
+            ], 200);
+        }
+
+        return view('ruang.index', ['ruang' => $ruangs]);
     }
 
     // GET /api/ruang/{id} - Tampilkan detail ruang
     public function show($id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
             return response()->json([
                 'success' => false,
@@ -57,7 +65,7 @@ class RuangController extends Controller
     public function update(Request $request, $id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
             return response()->json([
                 'success' => false,
@@ -84,7 +92,7 @@ class RuangController extends Controller
     public function destroy($id)
     {
         $ruang = Ruang::find($id);
-        
+
         if (!$ruang) {
             return response()->json([
                 'success' => false,
