@@ -11,14 +11,22 @@ class AdminUserSeeder extends Seeder
     public function run()
     {
         $email = trim(env('ADMIN_EMAIL', 'admin@default.com'));
+        $username = trim(env('ADMIN_USERNAME', ''));
 
-        User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => $email],
             [
                 'name' => env('ADMIN_NAME', 'Administrator'),
                 'password' => Hash::make(env('ADMIN_PASSWORD', 'password123')),
                 'role' => 'admin',
+                'username' => $username ?: null,
             ]
         );
+
+        // If user exists but username missing and ADMIN_USERNAME provided, set it
+        if ($username && (!$user->username || trim($user->username) === '')) {
+            $user->username = $username;
+            $user->save();
+        }
     }
 }
