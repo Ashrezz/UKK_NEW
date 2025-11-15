@@ -17,19 +17,6 @@
         <div class="card p-6">
             <form method="POST" action="/register" class="space-y-4">
                 @csrf
-                
-                <!-- Name Field -->
-                <div>
-                    <label for="name" class="block text-xs sm:text-sm font-medium text-black">
-                        Nama Lengkap
-                    </label>
-                    <div class="mt-1">
-                        <input id="name" name="name" type="text" required 
-                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50 
-                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
-                            placeholder="Masukkan nama lengkap">
-                    </div>
-                </div>
 
                 <!-- Username Field -->
                 <div>
@@ -37,8 +24,8 @@
                         Username
                     </label>
                     <div class="mt-1">
-                        <input id="username" name="username" type="text" required 
-                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50 
+                        <input id="username" name="username" type="text" required
+                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
                             focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
                             placeholder="Pilih username (min 3 karakter)">
                     </div>
@@ -50,8 +37,8 @@
                         Email
                     </label>
                     <div class="mt-1">
-                        <input id="email" name="email" type="email" required 
-                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50 
+                        <input id="email" name="email" type="email" required
+                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
                             focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
                             placeholder="nama@email.com">
                     </div>

@@ -13,17 +13,17 @@
                 <form action="{{ route('admin.tambah_user.store') }}" method="POST" class="space-y-4 sm:space-y-6">
                     @csrf
 
-                    <!-- Name Field -->
+                    <!-- Username Field -->
                     <div>
-                        <label for="name" class="block text-xs sm:text-sm font-medium text-black">
-                            Nama Lengkap
+                        <label for="username" class="block text-xs sm:text-sm font-medium text-black">
+                            Username
                         </label>
                         <div class="mt-1">
-                            <input type="text" name="name" id="name" required
+                            <input type="text" name="username" id="username" required
                                 class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
                                 placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500 
                                 text-black transition-colors duration-200"
-                                placeholder="Masukkan nama lengkap">
+                                placeholder="Pilih username (min 3 karakter)">
                         </div>
                     </div>
 

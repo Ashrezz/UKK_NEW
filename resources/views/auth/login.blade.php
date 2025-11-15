@@ -17,14 +17,14 @@
         <div class="card p-6">
             <form method="POST" action="/login" class="space-y-4">
                 @csrf
-                
+
                 <!-- Email or Username Field -->
                 <div>
                     <label for="email" class="block text-xs sm:text-sm font-medium text-black">
                         Email atau Username
                     </label>
                     <div class="mt-1">
-                        <input id="email" name="email" type="text" required 
+                        <input id="email" name="email" type="text" required
                             class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
                             focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
                             placeholder="nama atau username">

@@ -71,9 +71,9 @@
         @auth
             <div class="absolute bottom-4 left-4 right-4">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 font-semibold">{{ strtoupper(substr(auth()->user()->name,0,1)) }}</div>
+                    <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 font-semibold">{{ strtoupper(substr(auth()->user()->username,0,1)) }}</div>
                     <div>
-                        <div class="font-medium">{{ auth()->user()->name }}</div>
+                        <div class="font-medium">{{ auth()->user()->username }}</div>
                         <div class="text-xs muted">{{ auth()->user()->role }}</div>
                     </div>
                 </div>

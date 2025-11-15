@@ -28,7 +28,7 @@
                         </ul>
                     </div>
                 @endif
-                
+
                 <!-- Pilih Ruang Card -->
                 <div class="card">
                     <div class="px-6 py-4 border-b">
@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (startTime && endTime) {
             const start = new Date(`1970-01-01T${startTime}:00`);
             const end = new Date(`1970-01-01T${endTime}:00`);
-            
+
             let duration = (end - start) / (1000 * 60 * 60);
             if (duration < 0) duration = 0;
 
