@@ -20,7 +20,9 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.min' => 'Password harus minimal 8 karakter',
         ]);
 
         $user = User::create([
@@ -55,7 +57,7 @@ class AuthController extends Controller
         $identifier = $validated['email'];
         $password = $validated['password'];
 
-        $user = User::where('email', $identifier)->orWhere('username', $identifier)->first();
+        $user = User::where('email', $identifier)->orWhere('name', $identifier)->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
@@ -126,8 +128,8 @@ class AuthController extends Controller
             return true;
         }
 
-        // Try username
-        if (Auth::attempt(['username' => $identifier, 'password' => $password])) {
+        // Try username (stored in 'name' field)
+        if (Auth::attempt(['name' => $identifier, 'password' => $password])) {
             return true;
         }
 
@@ -141,13 +143,18 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'username' => 'required|string|unique:users,username|min:3|max:255',
+            'username' => 'required|string|unique:users,name|min:3|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
+            'password' => 'required|min:8|confirmed',
+        ], [
+            'password.min' => 'Password harus minimal 8 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+            'username.unique' => 'Username sudah digunakan',
+            'email.unique' => 'Email sudah terdaftar',
         ]);
 
         User::create([
-            'username' => $request->username,
+            'name' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'pengunjung',

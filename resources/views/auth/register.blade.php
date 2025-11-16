@@ -15,6 +15,17 @@
 
         <!-- Register Card -->
         <div class="card p-6">
+            <!-- Display validation errors -->
+            @if ($errors->any())
+                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm">
+                    <ul class="list-disc list-inside space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form method="POST" action="/register" class="space-y-4">
                 @csrf
 
@@ -24,11 +35,14 @@
                         Username
                     </label>
                     <div class="mt-1">
-                        <input id="username" name="username" type="text" required
+                        <input id="username" name="username" type="text" required value="{{ old('username') }}"
                             class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
-                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
+                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200 @error('username') border-red-500 @enderror"
                             placeholder="Pilih username (min 3 karakter)">
                     </div>
+                    @error('username')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Email Field -->
@@ -37,11 +51,14 @@
                         Email
                     </label>
                     <div class="mt-1">
-                        <input id="email" name="email" type="email" required
+                        <input id="email" name="email" type="email" required value="{{ old('email') }}"
                             class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
-                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
+                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200 @error('email') border-red-500 @enderror"
                             placeholder="nama@email.com">
                     </div>
+                    @error('email')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Password Field -->
@@ -52,9 +69,15 @@
                     <div class="mt-1">
                         <input id="password" name="password" type="password" required
                             class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
-                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
+                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200 @error('password') border-red-500 @enderror"
                             placeholder="••••••••">
                     </div>
+                    <p class="mt-1 text-xs text-black/60">
+                        <span class="font-medium">⚠️ Password harus minimal 8 karakter</span>
+                    </p>
+                    @error('password')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Password Confirmation Field -->
@@ -68,6 +91,9 @@
                             focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200"
                             placeholder="••••••••">
                     </div>
+                    <p class="mt-1 text-xs text-black/60">
+                        Masukkan password yang sama
+                    </p>
                 </div>
 
                 <!-- Submit Button -->
