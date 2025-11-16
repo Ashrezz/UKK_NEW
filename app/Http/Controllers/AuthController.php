@@ -27,9 +27,10 @@ class AuthController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+            'username' => $validated['name'], // Also set username
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => 'pengunjung',
+            'role' => 'user', // Changed from 'pengunjung' to 'user' to match database enum
         ]);
 
         // Buat token Sanctum
@@ -57,7 +58,10 @@ class AuthController extends Controller
         $identifier = $validated['email'];
         $password = $validated['password'];
 
-        $user = User::where('email', $identifier)->orWhere('name', $identifier)->first();
+        $user = User::where('email', $identifier)
+            ->orWhere('username', $identifier)
+            ->orWhere('name', $identifier)
+            ->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
@@ -128,8 +132,8 @@ class AuthController extends Controller
             return true;
         }
 
-        // Try username (stored in 'name' field)
-        if (Auth::attempt(['name' => $identifier, 'password' => $password])) {
+        // Try username field
+        if (Auth::attempt(['username' => $identifier, 'password' => $password])) {
             return true;
         }
 
@@ -143,7 +147,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'username' => 'required|string|unique:users,name|min:3|max:255',
+            'username' => 'required|string|unique:users,username|min:3|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
         ], [
@@ -155,9 +159,10 @@ class AuthController extends Controller
 
         User::create([
             'name' => $request->username,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'pengunjung',
+            'role' => 'user', // Changed from 'pengunjung' to 'user' to match database enum
         ]);
 
         return redirect()->route('login')->with('success', 'Registrasi berhasil, silakan login');

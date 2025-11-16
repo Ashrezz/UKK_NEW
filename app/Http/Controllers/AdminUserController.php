@@ -18,11 +18,14 @@ class AdminUserController extends Controller
         $request->validate([
             'username' => 'required|string|unique:users,username|min:3|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role' => 'required|in:petugas,pengunjung',
+            'password' => 'required|string|min:8',
+            'role' => 'required|in:petugas,user',
+        ], [
+            'password.min' => 'Password harus minimal 8 karakter',
         ]);
 
         User::create([
+            'name' => $request->username,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),

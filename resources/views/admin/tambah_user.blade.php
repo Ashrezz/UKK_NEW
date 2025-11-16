@@ -5,7 +5,7 @@
     <div class="max-w-7xl mx-auto">
         <div class="card p-6 mb-6">
             <h2 class="text-2xl font-semibold">Tambah Pengguna Baru</h2>
-            <p class="muted mt-1">Buat akun baru untuk petugas atau pengunjung</p>
+            <p class="muted mt-1">Buat akun baru untuk petugas atau user</p>
         </div>
 
         <div class="card overflow-hidden">
@@ -20,8 +20,8 @@
                         </label>
                         <div class="mt-1">
                             <input type="text" name="username" id="username" required
-                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
-                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500 
+                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm
+                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500
                                 text-black transition-colors duration-200"
                                 placeholder="Pilih username (min 3 karakter)">
                         </div>
@@ -34,8 +34,8 @@
                         </label>
                         <div class="mt-1">
                             <input type="email" name="email" id="email" required
-                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
-                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500 
+                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm
+                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500
                                 text-black transition-colors duration-200"
                                 placeholder="nama@email.com">
                         </div>
@@ -48,8 +48,8 @@
                         </label>
                         <div class="mt-1">
                             <input type="password" name="password" id="password" required
-                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
-                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500 
+                                class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm
+                                placeholder-black/50 focus:outline-none focus:ring-red-500 focus:border-red-500
                                 text-black transition-colors duration-200"
                                 placeholder="••••••••">
                         </div>
@@ -66,7 +66,7 @@
                                 focus:outline-none focus:ring-red-500 focus:border-red-500 rounded-md
                                 text-black transition-colors duration-200">
                                 <option value="petugas">Petugas</option>
-                                <option value="pengunjung">Pengunjung</option>
+                                <option value="user">User</option>
                             </select>
                         </div>
                     </div>
@@ -74,7 +74,7 @@
                     <!-- Submit Button -->
                     <div class="pt-3 sm:pt-4">
                         <button type="submit"
-                            class="w-full flex justify-center py-2 px-4 text-sm sm:text-base border border-transparent rounded-md shadow-sm font-medium 
+                            class="w-full flex justify-center py-2 px-4 text-sm sm:text-base border border-transparent rounded-md shadow-sm font-medium
                             text-white btn-danger
                             transform hover:scale-[1.02] transition-all duration-200">
                             Tambah Pengguna
