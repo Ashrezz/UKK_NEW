@@ -388,6 +388,90 @@ class PeminjamanController extends Controller
         return back()->with('success', 'Booking dihapus permanen.');
     }
 
+    // UPDATE: Show edit form
+    public function edit($id)
+    {
+        $peminjaman = Peminjaman::with(['ruang', 'user'])->findOrFail($id);
+        
+        // Only allow editing if status is pending
+        if ($peminjaman->status !== 'pending') {
+            return back()->with('error', 'Hanya peminjaman dengan status pending yang dapat diedit!');
+        }
+
+        // Only allow user to edit their own booking, or admin/petugas can edit any
+        if (auth()->id() !== $peminjaman->user_id && !in_array(auth()->user()->role, ['admin', 'petugas'])) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk mengedit peminjaman ini!');
+        }
+
+        $ruangs = Ruang::all();
+        return view('peminjaman.edit', compact('peminjaman', 'ruangs'));
+    }
+
+    // UPDATE: Update peminjaman
+    public function update(Request $request, $id)
+    {
+        $peminjaman = Peminjaman::findOrFail($id);
+
+        // Only allow editing if status is pending
+        if ($peminjaman->status !== 'pending') {
+            return back()->with('error', 'Hanya peminjaman dengan status pending yang dapat diedit!');
+        }
+
+        // Only allow user to edit their own booking, or admin/petugas can edit any
+        if (auth()->id() !== $peminjaman->user_id && !in_array(auth()->user()->role, ['admin', 'petugas'])) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk mengedit peminjaman ini!');
+        }
+
+        $request->validate([
+            'ruang_id' => 'required|exists:ruang,id',
+            'tanggal' => 'required|date|after_or_equal:today',
+            'jam_mulai' => 'required',
+            'jam_selesai' => 'required',
+            'keperluan' => 'required|string',
+        ], [
+            'tanggal.after_or_equal' => 'Tanggal peminjaman tidak boleh sebelum hari ini.'
+        ]);
+
+        // Validate jam_selesai must be after jam_mulai
+        if (strtotime($request->jam_selesai) <= strtotime($request->jam_mulai)) {
+            return back()->withErrors(['jam_selesai' => 'Jam selesai harus lebih besar dari jam mulai.'])->withInput();
+        }
+
+        // Check for conflicts (exclude current booking)
+        $bentrok = Peminjaman::where('ruang_id', $request->ruang_id)
+            ->where('tanggal', $request->tanggal)
+            ->where('id', '!=', $id)
+            ->whereIn('status', ['pending', 'disetujui'])
+            ->where(function($q) use ($request) {
+                $q->where(function($q2) use ($request) {
+                    $q2->where('jam_mulai', '<', $request->jam_selesai)
+                        ->where('jam_selesai', '>', $request->jam_mulai);
+                });
+            })
+            ->exists();
+
+        if ($bentrok) {
+            return back()->with('error', 'Ruang sudah dibooking pada waktu tersebut!');
+        }
+
+        // Recalculate biaya if time changed
+        $mulai = strtotime($request->jam_mulai);
+        $selesai = strtotime($request->jam_selesai);
+        $durasi = ceil(($selesai - $mulai) / 3600);
+        $biaya = $durasi * 50000;
+
+        $peminjaman->update([
+            'ruang_id' => $request->ruang_id,
+            'tanggal' => $request->tanggal,
+            'jam_mulai' => $request->jam_mulai,
+            'jam_selesai' => $request->jam_selesai,
+            'keperluan' => $request->keperluan,
+            'biaya' => $biaya,
+        ]);
+
+        return redirect()->route('home')->with('success', 'Peminjaman berhasil diupdate!');
+    }
+
     public function destroy($id)
     {
         $pinjam = Peminjaman::findOrFail($id);

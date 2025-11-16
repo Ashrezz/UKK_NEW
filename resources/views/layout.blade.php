@@ -58,9 +58,10 @@
                 @endif
 
                 @if(auth()->user()->role == 'admin')
-                    <a href="{{ route('admin.tambah_user.create') }}" class="sidebar-link {{ request()->routeIs('admin.tambah_user.create') ? 'active' : ''}}">Tambah User</a>
+                    <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : ''}}">Kelola User</a>
                 @endif
 
+                <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->routeIs('profile.*') ? 'active' : ''}}">Edit Profil</a>
                 <a href="{{ route('logout') }}" class="sidebar-link text-red-600">Logout</a>
             @else
                 <a href="{{ route('login') }}" class="sidebar-link {{ request()->routeIs('login') ? 'active' : ''}}">Login</a>

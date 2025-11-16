@@ -4,6 +4,7 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RuangController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
@@ -15,10 +16,18 @@ Route::get('/register', [AuthController::class, 'registerForm']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Profile Management (All authenticated users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
 // Peminjaman
 Route::middleware(['auth', 'prevent_direct_access'])->group(function () {
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
     Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
+    Route::get('/peminjaman/{id}/edit', [PeminjamanController::class, 'edit'])->name('peminjaman.edit');
+    Route::put('/peminjaman/{id}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::get('/peminjaman/jadwal', [PeminjamanController::class, 'jadwal'])->name('peminjaman.jadwal');
 
     // Payment routes
@@ -66,8 +75,17 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/pembayaran/{id}/verifikasi', [PembayaranController::class, 'verifikasi'])->name('pembayaran.verifikasi');
 });
 
-// Admin only: Tambah User
+// Admin only: User Management (Full CRUD)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // User Management
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
+    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+    Route::get('/users/{id}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    
+    // Legacy route for backward compatibility
     Route::get('/tambah-user', [AdminUserController::class, 'create'])->name('tambah_user.create');
     Route::post('/tambah-user', [AdminUserController::class, 'store'])->name('tambah_user.store');
 });

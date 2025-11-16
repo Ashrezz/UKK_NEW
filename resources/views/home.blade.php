@@ -25,7 +25,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="stats-card card">
             <div class="muted text-xs">Total Peminjaman</div>
-            <div class="text-2xl font-semibold">{{ count($peminjaman) }}</div>
+            <div class="text-2xl font-semibold">{{ $peminjaman->count() }}</div>
         </div>
         <div class="stats-card card">
             <div class="muted text-xs">Peminjaman Aktif</div>
@@ -53,6 +53,7 @@
                         <th class="hidden md:table-cell px-4 py-3">Jam</th>
                         <th class="hidden lg:table-cell px-4 py-3">Peminjam</th>
                         <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -69,6 +70,13 @@
                                 <span class="badge" style="background:#ecfdf5;color:#065f46;border:1px solid rgba(6,95,70,0.06)">{{ ucfirst($p->status) }}</span>
                             @else
                                 <span class="badge" style="background:#fff1f2;color:#981b1b;border:1px solid rgba(152,27,27,0.06)">{{ ucfirst($p->status) }}</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            @if($p->status == 'pending' && (auth()->id() == $p->user_id || in_array(auth()->user()->role, ['admin', 'petugas'])))
+                                <a href="{{ route('peminjaman.edit', $p->id) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                                    Edit
+                                </a>
                             @endif
                         </td>
                     </tr>
