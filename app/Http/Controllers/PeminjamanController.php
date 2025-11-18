@@ -392,7 +392,7 @@ class PeminjamanController extends Controller
     public function edit($id)
     {
         $peminjaman = Peminjaman::with(['ruang', 'user'])->findOrFail($id);
-        
+
         // Only allow editing if status is pending
         if ($peminjaman->status !== 'pending') {
             return back()->with('error', 'Hanya peminjaman dengan status pending yang dapat diedit!');

@@ -186,4 +186,7 @@ return [
 
     'api_response_format' => 'json',
 
+    // Admin contact for support (e.g., forgot/change password)
+    'admin_whatsapp' => env('ADMIN_WHATSAPP', '6281234567890'),
+
 ];

@@ -57,6 +57,16 @@
                             Daftar disini
                         </a>
                     </p>
+                    <p class="text-black/70 mt-3">
+                        Lupa atau ingin mengganti password?
+                        <a
+                            href="https://wa.me/{{ preg_replace('/[^0-9]/', '', config('app.admin_whatsapp')) }}?text={{ urlencode('Halo Admin, saya lupa/ingin mengganti password akun saya.') }}"
+                            target="_blank"
+                            rel="noopener"
+                            class="font-medium text-green-600 hover:text-green-700">
+                            Hubungi admin via WhatsApp
+                        </a>
+                    </p>
                 </div>
             </form>
         </div>

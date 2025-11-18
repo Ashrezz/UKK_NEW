@@ -84,7 +84,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/{id}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
-    
+
     // Legacy route for backward compatibility
     Route::get('/tambah-user', [AdminUserController::class, 'create'])->name('tambah_user.create');
     Route::post('/tambah-user', [AdminUserController::class, 'store'])->name('tambah_user.store');
