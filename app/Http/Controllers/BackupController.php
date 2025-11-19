@@ -10,32 +10,13 @@ use Carbon\Carbon;
 
 class BackupController extends Controller
 {
-    public function index(DatabaseBackupService $service)
+    public function index()
     {
         try {
-            $setting = null;
-            $backups = [];
-            
-            // Try to get settings if table exists
-            try {
-                if (DB::getSchemaBuilder()->hasTable('backup_settings')) {
-                    $setting = DB::table('backup_settings')->orderByDesc('id')->first();
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Could not load backup settings: ' . $e->getMessage());
-            }
-            
-            // Get backups list
-            $backups = $service->list();
-            
-            return view('admin.backups.index', compact('setting', 'backups'));
+            return view('admin.backups.index');
         } catch (\Exception $e) {
             \Log::error('Backup index error: ' . $e->getMessage());
-            return view('admin.backups.index', [
-                'setting' => null,
-                'backups' => [],
-                'error' => 'Error loading backup data: ' . $e->getMessage()
-            ]);
+            return view('admin.backups.index');
         }
     }
 
@@ -78,8 +59,17 @@ class BackupController extends Controller
     public function manual(DatabaseBackupService $service)
     {
         try {
+            // Set error reporting
+            error_reporting(E_ALL);
+            ini_set('display_errors', '1');
+            
             // Generate SQL backup in memory
             $sqlContent = $service->generateAndDownload();
+            
+            if (empty($sqlContent)) {
+                throw new \Exception('Backup content is empty');
+            }
+            
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '.sql';
             
             // Stream download langsung tanpa save
@@ -92,8 +82,20 @@ class BackupController extends Controller
         } catch (\Throwable $e) {
             \Log::error('Manual backup failed', [
                 'error' => $e->getMessage(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
             ]);
+            
+            // Show detailed error in development
+            if (config('app.debug')) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                    'trace' => explode("\n", $e->getTraceAsString())
+                ], 500);
+            }
             
             return redirect()->route('admin.backups.index')
                 ->with('error', 'Backup gagal: ' . $e->getMessage());
