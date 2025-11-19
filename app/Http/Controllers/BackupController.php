@@ -77,77 +77,26 @@ class BackupController extends Controller
 
     public function manual(DatabaseBackupService $service)
     {
-        // Set longer execution time for large databases
-        set_time_limit(300); // 5 minutes
-        ini_set('memory_limit', '512M');
-        
         try {
-            \Log::info('Starting manual backup process');
+            // Generate SQL backup in memory
+            $sqlContent = $service->generateAndDownload();
+            $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '.sql';
             
-            $result = $service->generate();
-            
-            \Log::info('Backup generated', ['filename' => $result['filename'] ?? 'unknown']);
-            
-            // For Railway/Production - immediately offer download using SQL content
-            if (env('APP_ENV') === 'production' || request()->has('download')) {
-                \Log::info('Attempting to download backup for production/Railway');
-                
-                // Try multiple methods to get file content
-                $content = null;
-                
-                // Method 1: From SQL content in result
-                if (isset($result['sql_content']) && !empty($result['sql_content'])) {
-                    $content = $result['sql_content'];
-                    \Log::info('Using SQL content from result');
-                }
-                
-                // Method 2: From temp file
-                if (!$content && isset($result['temp_file']) && file_exists($result['temp_file'])) {
-                    $content = file_get_contents($result['temp_file']);
-                    \Log::info('Using temp file', ['path' => $result['temp_file']]);
-                    @unlink($result['temp_file']); // Clean up temp file
-                }
-                
-                // Method 3: From storage path
-                if (!$content) {
-                    $path = storage_path('app/backups/' . $result['filename']);
-                    if (file_exists($path)) {
-                        $content = file_get_contents($path);
-                        \Log::info('Using storage path', ['path' => $path]);
-                    }
-                }
-                
-                // If we have content, return as download
-                if ($content) {
-                    \Log::info('Returning backup download', ['size' => strlen($content)]);
-                    return response()->streamDownload(function() use ($content) {
-                        echo $content;
-                    }, $result['filename'], [
-                        'Content-Type' => 'application/sql',
-                        'Content-Disposition' => 'attachment; filename="' . $result['filename'] . '"',
-                    ]);
-                }
-                
-                \Log::error('No content available for download');
-                throw new \Exception('Could not retrieve backup content for download');
-            }
-            
-            return redirect()->route('admin.backups.index')->with('success', 'Backup berhasil dibuat: ' . $result['filename']);
+            // Stream download langsung tanpa save
+            return response()->streamDownload(function() use ($sqlContent) {
+                echo $sqlContent;
+            }, $filename, [
+                'Content-Type' => 'application/sql',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
         } catch (\Throwable $e) {
             \Log::error('Manual backup failed', [
                 'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
+                'line' => $e->getLine()
             ]);
             
-            // Return user-friendly error
-            $errorMsg = 'Backup gagal: ' . $e->getMessage();
-            if (env('APP_DEBUG')) {
-                $errorMsg .= ' (Line: ' . $e->getLine() . ')';
-            }
-            
-            return redirect()->route('admin.backups.index')->with('error', $errorMsg);
+            return redirect()->route('admin.backups.index')
+                ->with('error', 'Backup gagal: ' . $e->getMessage());
         }
     }
 
