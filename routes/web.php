@@ -5,6 +5,7 @@ use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RuangController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\BackupController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
@@ -88,4 +89,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Legacy route for backward compatibility
     Route::get('/tambah-user', [AdminUserController::class, 'create'])->name('tambah_user.create');
     Route::post('/tambah-user', [AdminUserController::class, 'store'])->name('tambah_user.store');
+
+    // Backup management
+    Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+    Route::post('/backups/settings', [BackupController::class, 'saveSettings'])->name('backups.settings.save');
+    Route::post('/backups/manual', [BackupController::class, 'manual'])->name('backups.manual');
+    Route::get('/backups/download/{filename}', [BackupController::class, 'download'])->name('backups.download');
+    Route::get('/backups/restore', [BackupController::class, 'restoreForm'])->name('backups.restore.form');
+    Route::post('/backups/restore', [BackupController::class, 'restoreUpload'])->name('backups.restore.upload');
 });
