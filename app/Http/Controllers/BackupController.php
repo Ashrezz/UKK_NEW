@@ -66,18 +66,23 @@ class BackupController extends Controller
             abort(400, 'Invalid filename');
         }
 
-        $path = 'backups/' . $filename;
+        $fullPath = storage_path('app/backups/' . $filename);
 
-        if (!Storage::disk('local')->exists($path)) {
+        // Check if file exists using file_exists instead of Storage facade
+        if (!file_exists($fullPath)) {
             \Log::error('Backup file not found', [
                 'filename' => $filename,
-                'path' => $path,
-                'full_path' => storage_path('app/' . $path)
+                'full_path' => $fullPath,
+                'directory_exists' => is_dir(storage_path('app/backups')),
+                'directory_contents' => is_dir(storage_path('app/backups')) ? scandir(storage_path('app/backups')) : []
             ]);
             abort(404, 'File backup tidak ditemukan. File mungkin telah dihapus atau belum dibuat.');
         }
 
-        return response()->download(storage_path('app/' . $path));
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => 'application/sql',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+        ]);
     }
 
     public function restoreForm()

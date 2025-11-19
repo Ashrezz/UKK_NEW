@@ -31,18 +31,6 @@ class RuangController extends Controller
     // GET /api/ruang - Tampilkan semua ruang
     public function index(Request $request)
     {
-        // Guard: jika user datang dari halaman jadwal via browser (referer)
-        // maka jangan izinkan akses ke halaman ruang dan kembalikan ke jadwal.
-        // Tetap biarkan permintaan API/JSON berjalan.
-        if (! $request->wantsJson() && ! $request->is('api/*')) {
-            $previous = url()->previous();
-            // cek path sederhana '/peminjaman/jadwal' untuk memastikan asal
-            if ($previous && Str::contains($previous, '/peminjaman/jadwal')) {
-                return redirect()->route('peminjaman.jadwal')
-                    ->with('error', 'Akses ke halaman ruang dari halaman Jadwal tidak diperbolehkan.');
-            }
-        }
-
         $ruangs = Ruang::all();
 
         // Jika permintaan API (prefix api/*) kembalikan JSON,
@@ -88,23 +76,36 @@ class RuangController extends Controller
     // POST /api/ruang - Buat ruang baru
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nama_ruang' => 'required|string|max:255',
-            'kapasitas' => 'required|integer|min:1',
-            'deskripsi' => 'required|string'
-        ]);
+        try {
+            $validated = $request->validate([
+                'nama_ruang' => 'required|string|max:255',
+                'kapasitas' => 'required|integer|min:1',
+                'deskripsi' => 'nullable|string'
+            ]);
 
-        $ruang = Ruang::create($validated);
+            $ruang = Ruang::create($validated);
 
-        if ($request->is('api/*')) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Ruang berhasil dibuat',
-                'data' => $ruang
-            ], 201);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Ruang berhasil dibuat',
+                    'data' => $ruang
+                ], 201);
+            }
+
+            return redirect()->back()->with('success', 'Ruang berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            \Log::error('Error creating ruang: ' . $e->getMessage());
+            
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal membuat ruang: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Gagal menambahkan ruang: ' . $e->getMessage())->withInput();
         }
-
-        return redirect()->back()->with('success', 'Ruang berhasil ditambahkan!');
     }
 
     // PUT /api/ruang/{id} - Update ruang
