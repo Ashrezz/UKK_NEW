@@ -59,6 +59,7 @@
 
                 @if(auth()->user()->role == 'admin')
                     <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : ''}}">Kelola User</a>
+                    <a href="{{ route('admin.backups.index') }}" class="sidebar-link {{ request()->routeIs('admin.backups.*') ? 'active' : ''}}">Backup DB</a>
                 @endif
 
                 <a href="{{ route('profile.edit') }}" class="sidebar-link {{ request()->routeIs('profile.*') ? 'active' : ''}}">Edit Profil</a>
