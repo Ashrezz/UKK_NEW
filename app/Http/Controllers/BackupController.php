@@ -61,10 +61,22 @@ class BackupController extends Controller
 
     public function download($filename)
     {
-        $path = 'backups/' . $filename;
-        if (!Storage::disk('local')->exists($path)) {
-            abort(404);
+        // Validate filename to prevent directory traversal
+        if (strpos($filename, '..') !== false || strpos($filename, '/') !== false) {
+            abort(400, 'Invalid filename');
         }
+
+        $path = 'backups/' . $filename;
+
+        if (!Storage::disk('local')->exists($path)) {
+            \Log::error('Backup file not found', [
+                'filename' => $filename,
+                'path' => $path,
+                'full_path' => storage_path('app/' . $path)
+            ]);
+            abort(404, 'File backup tidak ditemukan. File mungkin telah dihapus atau belum dibuat.');
+        }
+
         return response()->download(storage_path('app/' . $path));
     }
 

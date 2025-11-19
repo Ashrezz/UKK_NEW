@@ -14,52 +14,81 @@ class DatabaseBackupService
 
     public function generate(): array
     {
-        $connection = DB::connection();
-        $pdo = $connection->getPdo();
-        $dbName = $connection->getDatabaseName();
+        try {
+            $connection = DB::connection();
+            $pdo = $connection->getPdo();
+            $dbName = $connection->getDatabaseName();
 
-        $tables = $connection->select('SHOW TABLES');
-        $keyName = 'Tables_in_' . $dbName; // MySQL specific
+            $tables = $connection->select('SHOW TABLES');
+            $keyName = 'Tables_in_' . $dbName; // MySQL specific
 
-        $sql = "-- Database backup generated at " . Carbon::now()->toDateTimeString() . "\n";
-        $sql .= "-- Database: {$dbName}\n\nSET FOREIGN_KEY_CHECKS=0;\n";
+            $sql = "-- Database backup generated at " . Carbon::now()->toDateTimeString() . "\n";
+            $sql .= "-- Database: {$dbName}\n\nSET FOREIGN_KEY_CHECKS=0;\n";
 
-        foreach ($tables as $t) {
-            $table = $t->$keyName ?? null;
-            if (!$table) { continue; }
-            $create = $connection->select("SHOW CREATE TABLE `{$table}`");
-            $createStmt = $create[0]->{'Create Table'} ?? null;
-            if ($createStmt) {
-                $sql .= "\n-- Structure for table `{$table}`\nDROP TABLE IF EXISTS `{$table}`;\n{$createStmt};\n";
-            }
-            $rows = $connection->table($table)->get();
-            if ($rows->count()) {
-                $sql .= "\n-- Data for table `{$table}`\n";
-                foreach ($rows as $row) {
-                    $columns = array_map(fn($c) => "`" . str_replace("`","``", $c) . "`", array_keys((array)$row));
-                    $values = array_map(function ($v) use ($pdo) {
-                        if ($v === null) return 'NULL';
-                        return $pdo->quote($v);
-                    }, array_values((array)$row));
-                    $sql .= "INSERT INTO `{$table}` (" . implode(',', $columns) . ") VALUES (" . implode(',', $values) . ");\n";
+            foreach ($tables as $t) {
+                $table = $t->$keyName ?? null;
+                if (!$table) { continue; }
+                $create = $connection->select("SHOW CREATE TABLE `{$table}`");
+                $createStmt = $create[0]->{'Create Table'} ?? null;
+                if ($createStmt) {
+                    $sql .= "\n-- Structure for table `{$table}`\nDROP TABLE IF EXISTS `{$table}`;\n{$createStmt};\n";
+                }
+                $rows = $connection->table($table)->get();
+                if ($rows->count()) {
+                    $sql .= "\n-- Data for table `{$table}`\n";
+                    foreach ($rows as $row) {
+                        $columns = array_map(fn($c) => "`" . str_replace("`","``", $c) . "`", array_keys((array)$row));
+                        $values = array_map(function ($v) use ($pdo) {
+                            if ($v === null) return 'NULL';
+                            return $pdo->quote($v);
+                        }, array_values((array)$row));
+                        $sql .= "INSERT INTO `{$table}` (" . implode(',', $columns) . ") VALUES (" . implode(',', $values) . ");\n";
+                    }
                 }
             }
+            $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
+
+            $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '-' . Str::random(6) . '.sql';
+            $path = $this->folder . '/' . $filename;
+
+            // Ensure directory exists
+            $fullPath = storage_path('app/' . $this->folder);
+            if (!is_dir($fullPath)) {
+                mkdir($fullPath, 0755, true);
+                \Log::info('Created backups directory', ['path' => $fullPath]);
+            }
+
+            // Save backup file
+            Storage::disk($this->disk)->put($path, $sql);
+
+            // Verify file was created
+            if (!Storage::disk($this->disk)->exists($path)) {
+                throw new \RuntimeException('Backup file was not created successfully');
+            }
+
+            $size = Storage::disk($this->disk)->size($path);
+
+            DB::table('backups')->insert([
+                'filename' => $filename,
+                'size_bytes' => $size,
+                'driver' => config('database.default'),
+                'created_at' => Carbon::now(),
+            ]);
+
+            \Log::info('Backup created successfully', [
+                'filename' => $filename,
+                'size' => $size,
+                'path' => storage_path('app/' . $path)
+            ]);
+
+            return ['filename' => $filename, 'size' => $size, 'path' => $path];
+        } catch (\Throwable $e) {
+            \Log::error('Backup generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
         }
-        $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
-
-        $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '-' . Str::random(6) . '.sql';
-        $path = $this->folder . '/' . $filename;
-        Storage::disk($this->disk)->put($path, $sql);
-        $size = Storage::disk($this->disk)->size($path);
-
-        DB::table('backups')->insert([
-            'filename' => $filename,
-            'size_bytes' => $size,
-            'driver' => config('database.default'),
-            'created_at' => Carbon::now(),
-        ]);
-
-        return ['filename' => $filename, 'size' => $size, 'path' => $path];
     }
 
     public function list(int $limit = 50): array
