@@ -13,7 +13,18 @@
         <div class="card overflow-hidden mb-6">
             <div class="p-4">
                 <h3 class="text-base font-medium mb-3">Tambah Ruangan Baru</h3>
-                <form method="POST" action="/ruang" class="space-y-3">
+                
+                @if ($errors->any())
+                    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                        <ul class="text-sm text-red-600 space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('ruang.store') }}" class="space-y-3" id="addRoomForm">
                     @csrf
                     <div class="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
                         <!-- Nama Ruang Field -->
@@ -22,10 +33,14 @@
                                 Nama Ruang
                             </label>
                             <input type="text" name="nama_ruang" id="nama_ruang" required
+                                value="{{ old('nama_ruang') }}"
                                 class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
                                 focus:outline-none focus:ring-red-500 focus:border-red-500 text-black 
                                 transition-colors duration-200"
                                 placeholder="Contoh: Ruang Rapat A">
+                            @error('nama_ruang')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Deskripsi Field -->
@@ -33,11 +48,15 @@
                             <label for="deskripsi" class="block text-xs sm:text-sm font-medium text-black mb-1">
                                 Deskripsi
                             </label>
-                            <input type="text" name="deskripsi" id="deskripsi" required
+                            <input type="text" name="deskripsi" id="deskripsi"
+                                value="{{ old('deskripsi') }}"
                                 class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
                                 focus:outline-none focus:ring-red-500 focus:border-red-500 text-black 
                                 transition-colors duration-200"
                                 placeholder="Deskripsi singkat ruangan">
+                            @error('deskripsi')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <!-- Kapasitas Field -->
@@ -46,15 +65,19 @@
                                 Kapasitas
                             </label>
                             <input type="number" name="kapasitas" id="kapasitas" required
+                                value="{{ old('kapasitas') }}"
                                 class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm 
                                 focus:outline-none focus:ring-red-500 focus:border-red-500 text-black 
                                 transition-colors duration-200"
-                                placeholder="Jumlah orang">
+                                placeholder="Jumlah orang" min="1">
+                            @error('kapasitas')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
 
                     <div class="mt-3 sm:mt-4">
-                        <button type="submit" 
+                        <button type="submit" id="submitBtn"
                             class="w-full sm:w-auto px-4 sm:px-6 py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white 
                             btn-danger 
                             transform hover:scale-[1.02] transition-all duration-200">
@@ -104,4 +127,29 @@
         </div>
     </div>
 </div>
+
+<script>
+// Prevent double form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addRoomForm');
+    if (form) {
+        let isSubmitting = false;
+        
+        form.addEventListener('submit', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                isSubmitting = true;
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Menyimpan...';
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    }
+});
+</script>
 @endsection

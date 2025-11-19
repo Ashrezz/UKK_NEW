@@ -67,8 +67,8 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
 
 // Admin only: Room Management
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::post('/ruang', [RuangController::class, 'store']);
-    Route::delete('/ruang/{id}', [RuangController::class, 'destroy']);
+    Route::post('/ruang', [RuangController::class, 'store'])->name('ruang.store');
+    Route::delete('/ruang/{id}', [RuangController::class, 'destroy'])->name('ruang.destroy');
     // peminjaman manage routes moved to admin+petugas group
 
     // Payment verification routes
