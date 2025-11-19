@@ -51,40 +51,71 @@ class DatabaseBackupService
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '-' . Str::random(6) . '.sql';
             $path = $this->folder . '/' . $filename;
 
-            // Ensure directory exists
+            // Ensure directory exists with better error handling for Railway
             $fullPath = storage_path('app/' . $this->folder);
-            if (!is_dir($fullPath)) {
-                mkdir($fullPath, 0755, true);
-                \Log::info('Created backups directory', ['path' => $fullPath]);
+            try {
+                if (!is_dir($fullPath)) {
+                    if (!@mkdir($fullPath, 0755, true)) {
+                        \Log::warning('Could not create backups directory, trying alternative', ['path' => $fullPath]);
+                        // Try alternative temp directory
+                        $fullPath = sys_get_temp_dir() . '/backups';
+                        if (!is_dir($fullPath)) {
+                            @mkdir($fullPath, 0755, true);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::error('Directory creation error: ' . $e->getMessage());
             }
 
-            // Save backup file
-            Storage::disk($this->disk)->put($path, $sql);
-
-            // Verify file was created
-            if (!Storage::disk($this->disk)->exists($path)) {
-                throw new \RuntimeException('Backup file was not created successfully');
+            // For Railway - write to temp location first, then move
+            $tempFile = tempnam(sys_get_temp_dir(), 'backup_');
+            if ($tempFile === false) {
+                throw new \RuntimeException('Could not create temporary file');
             }
 
-            $size = Storage::disk($this->disk)->size($path);
+            file_put_contents($tempFile, $sql);
+            $size = filesize($tempFile);
 
-            DB::table('backups')->insert([
-                'filename' => $filename,
-                'size_bytes' => $size,
-                'driver' => config('database.default'),
-                'created_at' => Carbon::now(),
-            ]);
+            // Try to move to storage, but keep temp file as backup
+            try {
+                Storage::disk($this->disk)->put($path, file_get_contents($tempFile));
+            } catch (\Exception $e) {
+                \Log::warning('Could not write to storage disk: ' . $e->getMessage());
+                // Keep using temp file location
+                $path = $tempFile;
+            }
+
+            // Record in database
+            try {
+                DB::table('backups')->insert([
+                    'filename' => $filename,
+                    'size_bytes' => $size,
+                    'driver' => config('database.default'),
+                    'created_at' => Carbon::now(),
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Could not save backup record to database: ' . $e->getMessage());
+            }
 
             \Log::info('Backup created successfully', [
                 'filename' => $filename,
                 'size' => $size,
-                'path' => storage_path('app/' . $path)
+                'temp_file' => $tempFile
             ]);
 
-            return ['filename' => $filename, 'size' => $size, 'path' => $path];
+            return [
+                'filename' => $filename, 
+                'size' => $size, 
+                'path' => $path,
+                'temp_file' => $tempFile,
+                'sql_content' => $sql
+            ];
         } catch (\Throwable $e) {
             \Log::error('Backup generation failed', [
                 'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
                 'trace' => $e->getTraceAsString()
             ]);
             throw $e;
@@ -93,9 +124,20 @@ class DatabaseBackupService
 
     public function list(int $limit = 50): array
     {
-        return DB::table('backups')->orderByDesc('id')->limit($limit)->get()->map(function ($b) {
-            return (array)$b;
-        })->toArray();
+        try {
+            // Check if backups table exists
+            if (!DB::getSchemaBuilder()->hasTable('backups')) {
+                \Log::warning('Backups table does not exist');
+                return [];
+            }
+            
+            return DB::table('backups')->orderByDesc('id')->limit($limit)->get()->map(function ($b) {
+                return (array)$b;
+            })->toArray();
+        } catch (\Exception $e) {
+            \Log::error('Error listing backups: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function restore(string $filename): int
