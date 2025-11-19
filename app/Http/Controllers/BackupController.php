@@ -59,20 +59,36 @@ class BackupController extends Controller
     public function manual(DatabaseBackupService $service)
     {
         try {
-            // Set error reporting
-            error_reporting(E_ALL);
-            ini_set('display_errors', '1');
+            \Log::info('=== BACKUP MANUAL START ===');
+            
+            // Check database connection first
+            try {
+                $dbName = DB::connection()->getDatabaseName();
+                \Log::info('Database connected', ['db' => $dbName]);
+            } catch (\Exception $e) {
+                \Log::error('Database connection failed', ['error' => $e->getMessage()]);
+                throw new \Exception('Database connection failed: ' . $e->getMessage());
+            }
+            
+            // Set limits
+            set_time_limit(300);
+            ini_set('memory_limit', '512M');
+            \Log::info('Limits set');
             
             // Generate SQL backup in memory
+            \Log::info('Calling generateAndDownload');
             $sqlContent = $service->generateAndDownload();
+            \Log::info('generateAndDownload completed', ['size' => strlen($sqlContent)]);
             
             if (empty($sqlContent)) {
                 throw new \Exception('Backup content is empty');
             }
             
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '.sql';
+            \Log::info('Filename generated', ['filename' => $filename]);
             
             // Stream download langsung tanpa save
+            \Log::info('Returning stream download');
             return response()->streamDownload(function() use ($sqlContent) {
                 echo $sqlContent;
             }, $filename, [
@@ -80,25 +96,21 @@ class BackupController extends Controller
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             ]);
         } catch (\Throwable $e) {
-            \Log::error('Manual backup failed', [
+            \Log::error('=== BACKUP MANUAL FAILED ===', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
                 'trace' => $e->getTraceAsString()
             ]);
             
-            // Show detailed error in development
-            if (config('app.debug')) {
-                return response()->json([
-                    'error' => $e->getMessage(),
-                    'line' => $e->getLine(),
-                    'file' => $e->getFile(),
-                    'trace' => explode("\n", $e->getTraceAsString())
-                ], 500);
-            }
-            
-            return redirect()->route('admin.backups.index')
-                ->with('error', 'Backup gagal: ' . $e->getMessage());
+            // Always return JSON error for debugging
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => basename($e->getFile()),
+                'type' => get_class($e)
+            ], 500);
         }
     }
 
