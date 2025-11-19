@@ -55,8 +55,24 @@ class BackupController extends Controller
 
     public function manual(DatabaseBackupService $service)
     {
-        $result = $service->generate();
-        return redirect()->route('admin.backups.index')->with('success', 'Backup berhasil dibuat: ' . $result['filename']);
+        try {
+            $result = $service->generate();
+            
+            // For Railway - immediately offer download
+            if (env('APP_ENV') === 'production' || request()->has('download')) {
+                $path = storage_path('app/backups/' . $result['filename']);
+                if (file_exists($path)) {
+                    return response()->download($path, $result['filename'], [
+                        'Content-Type' => 'application/sql',
+                    ])->deleteFileAfterSend(true);
+                }
+            }
+            
+            return redirect()->route('admin.backups.index')->with('success', 'Backup berhasil dibuat: ' . $result['filename']);
+        } catch (\Exception $e) {
+            \Log::error('Manual backup failed: ' . $e->getMessage());
+            return redirect()->route('admin.backups.index')->with('error', 'Backup gagal: ' . $e->getMessage());
+        }
     }
 
     public function download($filename)
@@ -70,13 +86,34 @@ class BackupController extends Controller
 
         // Check if file exists using file_exists instead of Storage facade
         if (!file_exists($fullPath)) {
-            \Log::error('Backup file not found', [
+            // If file not found, try to regenerate from database
+            \Log::warning('Backup file not found on disk, attempting to regenerate', [
                 'filename' => $filename,
-                'full_path' => $fullPath,
-                'directory_exists' => is_dir(storage_path('app/backups')),
-                'directory_contents' => is_dir(storage_path('app/backups')) ? scandir(storage_path('app/backups')) : []
+                'full_path' => $fullPath
             ]);
-            abort(404, 'File backup tidak ditemukan. File mungkin telah dihapus atau belum dibuat.');
+            
+            // Check if backup record exists in database
+            $backup = DB::table('backups')->where('filename', $filename)->first();
+            if (!$backup) {
+                abort(404, 'File backup tidak ditemukan dan tidak ada record di database.');
+            }
+            
+            // Generate fresh backup and download immediately
+            try {
+                $service = app(DatabaseBackupService::class);
+                $result = $service->generate();
+                $newPath = storage_path('app/backups/' . $result['filename']);
+                
+                if (file_exists($newPath)) {
+                    return response()->download($newPath, $result['filename'], [
+                        'Content-Type' => 'application/sql',
+                    ])->deleteFileAfterSend(true);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to regenerate backup: ' . $e->getMessage());
+            }
+            
+            abort(404, 'File backup tidak ditemukan. Silakan buat backup baru.');
         }
 
         return response()->download($fullPath, $filename, [

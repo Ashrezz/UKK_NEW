@@ -42,9 +42,19 @@
         </div>
         <div class="card p-6">
             <h2 class="text-lg font-medium mb-4">Backup Manual</h2>
-            <form method="POST" action="{{ route('admin.backups.manual') }}" onsubmit="return confirm('Buat backup sekarang?')" class="mb-4">
+            <p class="text-sm text-black/60 mb-4">
+                @if(config('app.env') === 'production')
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800 mb-2">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                        Railway Mode: Backup akan langsung didownload
+                    </span><br>
+                @endif
+                Backup database akan disimpan dan dapat didownload.
+            </p>
+            <form method="POST" action="{{ route('admin.backups.manual') }}" class="mb-4">
                 @csrf
-                <button class="btn-secondary">Buat Backup Sekarang</button>
+                <input type="hidden" name="download" value="1">
+                <button type="submit" class="btn-secondary">Buat & Download Backup Sekarang</button>
             </form>
             <a href="{{ route('admin.backups.restore.form') }}" class="text-sm text-blue-600 hover:underline">Restore dari File</a>
         </div>
@@ -70,6 +80,9 @@
                         <td class="py-2">{{ \Carbon\Carbon::parse($b['created_at'])->format('d M Y H:i') }}</td>
                         <td class="py-2 text-right">
                             <a class="text-blue-600 hover:underline" href="{{ route('admin.backups.download', $b['filename']) }}">Download</a>
+                            @if(config('app.env') === 'production')
+                                <span class="text-xs text-black/40 ml-2">(regenerate if missing)</span>
+                            @endif
                         </td>
                     </tr>
                 @empty
