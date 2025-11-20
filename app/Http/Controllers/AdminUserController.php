@@ -27,6 +27,7 @@ class AdminUserController extends Controller
         $request->validate([
             'username' => 'required|string|unique:users,username|min:3|max:255',
             'email' => 'required|email|unique:users,email',
+            'no_hp' => 'required|string|min:8|max:30',
             'password' => 'required|string|min:8',
             'role' => 'required|in:petugas,user',
         ], [
@@ -37,6 +38,7 @@ class AdminUserController extends Controller
             'name' => $request->username,
             'username' => $request->username,
             'email' => $request->email,
+            'no_hp' => $request->no_hp,
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
@@ -70,6 +72,7 @@ class AdminUserController extends Controller
         $request->validate([
             'username' => 'required|string|min:3|max:255|unique:users,username,' . $id,
             'email' => 'required|email|unique:users,email,' . $id,
+            'no_hp' => 'required|string|min:8|max:30',
             'password' => 'nullable|string|min:8',
             'role' => 'required|in:admin,petugas,user',
         ], [
@@ -80,6 +83,7 @@ class AdminUserController extends Controller
             'name' => $request->username,
             'username' => $request->username,
             'email' => $request->email,
+            'no_hp' => $request->no_hp,
             'role' => $request->role,
         ];
 

@@ -25,8 +25,8 @@ class RuangController extends Controller
             $this->middleware('role:admin')->only(['index', 'show']);
         }
 
-        // Hanya admin boleh membuat dan menghapus ruang
-        $this->middleware('role:admin')->only(['store', 'destroy', 'update']);
+        // Admin dan petugas boleh membuat, menghapus, dan update ruang
+        $this->middleware('role:admin,petugas')->only(['store', 'destroy', 'update']);
     }
     // GET /api/ruang - Tampilkan semua ruang
     public function index(Request $request)

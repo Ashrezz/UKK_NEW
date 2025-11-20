@@ -67,6 +67,20 @@
                 @enderror
             </div>
 
+            <!-- No HP -->
+            <div class="mb-4">
+                <label for="no_hp" class="block text-sm font-medium text-black mb-2">
+                    Nomor HP / WhatsApp <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="no_hp" id="no_hp" required
+                    value="{{ old('no_hp', $user->no_hp) }}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 @error('no_hp') border-red-500 @enderror"
+                    placeholder="08xxxxxxxxxx" minlength="8" maxlength="30">
+                @error('no_hp')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
             <hr class="my-6">
 
             <h3 class="text-lg font-semibold text-black mb-4">Ubah Password</h3>

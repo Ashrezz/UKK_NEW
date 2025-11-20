@@ -8,8 +8,8 @@
             <p class="muted mt-1">Tambah dan kelola ruangan yang tersedia untuk peminjaman</p>
         </div>
 
-        <!-- Add Room Form Card - Admin Only -->
-        @if(auth()->user()->role === 'admin')
+        <!-- Add Room Form Card - Admin & Petugas -->
+        @if(in_array(auth()->user()->role, ['admin','petugas']))
         <div class="card overflow-hidden mb-6">
             <div class="p-4">
                 <h3 class="text-base font-medium mb-3">Tambah Ruangan Baru</h3>
@@ -108,7 +108,7 @@
                             <td class="hidden sm:table-cell px-4 py-3 muted">{{ $r->deskripsi }}</td>
                             <td class="hidden md:table-cell px-4 py-3"><span class="badge" style="background:#eff6ff;color:#1e3a8a;">{{ $r->kapasitas }} Orang</span></td>
                             <td class="px-4 py-3">
-                                @if(auth()->user()->role === 'admin')
+                                @if(in_array(auth()->user()->role, ['admin','petugas']))
                                 <form method="POST" action="/ruang/{{ $r->id }}" onsubmit="return confirm('Yakin hapus ruang ini? Semua booking juga akan terhapus!')">
                                     @csrf
                                     @method('DELETE')

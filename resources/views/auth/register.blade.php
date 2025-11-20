@@ -61,6 +61,22 @@
                     @enderror
                 </div>
 
+                <!-- No HP Field -->
+                <div>
+                    <label for="no_hp" class="block text-xs sm:text-sm font-medium text-black">
+                        Nomor HP / WhatsApp
+                    </label>
+                    <div class="mt-1">
+                        <input id="no_hp" name="no_hp" type="text" required value="{{ old('no_hp') }}"
+                            class="appearance-none block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm placeholder-black/50
+                            focus:outline-none focus:ring-red-500 focus:border-red-500 text-black transition-colors duration-200 @error('no_hp') border-red-500 @enderror"
+                            placeholder="08xxxxxxxxxx">
+                    </div>
+                    @error('no_hp')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Password Field -->
                 <div>
                     <label for="password" class="block text-xs sm:text-sm font-medium text-black">

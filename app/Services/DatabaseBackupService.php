@@ -17,13 +17,13 @@ class DatabaseBackupService
         try {
             set_time_limit(300);
             ini_set('memory_limit', '512M');
-            
+
             $connection = DB::connection();
-            
+
             if (!$connection) {
                 throw new \Exception('Database connection failed');
             }
-            
+
             $pdo = $connection->getPdo();
             $dbName = $connection->getDatabaseName();
 
@@ -32,11 +32,11 @@ class DatabaseBackupService
             }
 
             $tables = $connection->select('SHOW TABLES');
-            
+
             if (empty($tables)) {
                 throw new \Exception('No tables found in database');
             }
-            
+
             $keyName = 'Tables_in_' . $dbName;
 
             $sql = "-- Database backup generated at " . Carbon::now()->toDateTimeString() . "\n";
@@ -45,14 +45,14 @@ class DatabaseBackupService
             foreach ($tables as $t) {
                 $table = $t->$keyName ?? null;
                 if (!$table) { continue; }
-                
+
                 try {
                     $create = $connection->select("SHOW CREATE TABLE `{$table}`");
                     $createStmt = $create[0]->{'Create Table'} ?? null;
                     if ($createStmt) {
                         $sql .= "\n-- Structure for table `{$table}`\nDROP TABLE IF EXISTS `{$table}`;\n{$createStmt};\n";
                     }
-                    
+
                     $rows = $connection->table($table)->get();
                     if ($rows->count()) {
                         $sql .= "\n-- Data for table `{$table}`\n";
@@ -72,11 +72,11 @@ class DatabaseBackupService
                 }
             }
             $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
-            
+
             if (strlen($sql) < 100) {
                 throw new \Exception('Backup SQL is too short, something went wrong');
             }
-            
+
             return $sql;
         } catch (\Throwable $e) {
             \Log::error('generateAndDownload failed', [
@@ -87,21 +87,21 @@ class DatabaseBackupService
             throw new \Exception('Backup generation failed: ' . $e->getMessage());
         }
     }
-    
+
     public function generate(): array
     {
         try {
             \Log::info('DatabaseBackupService: Starting backup generation');
-            
+
             $connection = DB::connection();
             $pdo = $connection->getPdo();
             $dbName = $connection->getDatabaseName();
-            
+
             \Log::info('DatabaseBackupService: Connected to database', ['db' => $dbName]);
 
             $tables = $connection->select('SHOW TABLES');
             $keyName = 'Tables_in_' . $dbName; // MySQL specific
-            
+
             \Log::info('DatabaseBackupService: Found tables', ['count' => count($tables)]);
 
             $sql = "-- Database backup generated at " . Carbon::now()->toDateTimeString() . "\n";
@@ -110,14 +110,14 @@ class DatabaseBackupService
             foreach ($tables as $t) {
                 $table = $t->$keyName ?? null;
                 if (!$table) { continue; }
-                
+
                 try {
                     $create = $connection->select("SHOW CREATE TABLE `{$table}`");
                     $createStmt = $create[0]->{'Create Table'} ?? null;
                     if ($createStmt) {
                         $sql .= "\n-- Structure for table `{$table}`\nDROP TABLE IF EXISTS `{$table}`;\n{$createStmt};\n";
                     }
-                    
+
                     $rows = $connection->table($table)->get();
                     if ($rows->count()) {
                         $sql .= "\n-- Data for table `{$table}`\n";
@@ -137,15 +137,15 @@ class DatabaseBackupService
                 }
             }
             $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
-            
+
             \Log::info('DatabaseBackupService: SQL generation complete', ['size' => strlen($sql)]);
 
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '-' . Str::random(6) . '.sql';
             $size = strlen($sql);
 
             return [
-                'filename' => $filename, 
-                'size' => $size, 
+                'filename' => $filename,
+                'size' => $size,
                 'sql_content' => $sql
             ];
         } catch (\Throwable $e) {
@@ -167,7 +167,7 @@ class DatabaseBackupService
                 \Log::warning('Backups table does not exist');
                 return [];
             }
-            
+
             return DB::table('backups')->orderByDesc('id')->limit($limit)->get()->map(function ($b) {
                 return (array)$b;
             })->toArray();

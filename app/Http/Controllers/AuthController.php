@@ -20,6 +20,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'no_hp' => 'required|string|min:8|max:30',
             'password' => 'required|string|min:8|confirmed',
         ], [
             'password.min' => 'Password harus minimal 8 karakter',
@@ -29,6 +30,7 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'username' => $validated['name'], // Also set username
             'email' => $validated['email'],
+            'no_hp' => $validated['no_hp'],
             'password' => Hash::make($validated['password']),
             'role' => 'user', // Changed from 'pengunjung' to 'user' to match database enum
         ]);
@@ -149,6 +151,7 @@ class AuthController extends Controller
         $request->validate([
             'username' => 'required|string|unique:users,username|min:3|max:255',
             'email' => 'required|email|unique:users,email',
+            'no_hp' => 'required|string|min:8|max:30',
             'password' => 'required|min:8|confirmed',
         ], [
             'password.min' => 'Password harus minimal 8 karakter',
@@ -161,6 +164,7 @@ class AuthController extends Controller
             'name' => $request->username,
             'username' => $request->username,
             'email' => $request->email,
+            'no_hp' => $request->no_hp,
             'password' => Hash::make($request->password),
             'role' => 'user', // Changed from 'pengunjung' to 'user' to match database enum
         ]);

@@ -65,9 +65,10 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/api/peminjaman/{id}', [PeminjamanController::class, 'detail']);
 });
 
-// Admin only: Room Management
-Route::middleware(['auth', 'role:admin'])->group(function () {
+// Admin & Petugas: Room Management
+Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::post('/ruang', [RuangController::class, 'store'])->name('ruang.store');
+    Route::put('/ruang/{id}', [RuangController::class, 'update'])->name('ruang.update');
     Route::delete('/ruang/{id}', [RuangController::class, 'destroy'])->name('ruang.destroy');
     // peminjaman manage routes moved to admin+petugas group
 

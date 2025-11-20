@@ -60,7 +60,7 @@ class BackupController extends Controller
     {
         try {
             \Log::info('=== BACKUP MANUAL START ===');
-            
+
             // Check database connection first
             try {
                 $dbName = DB::connection()->getDatabaseName();
@@ -69,24 +69,24 @@ class BackupController extends Controller
                 \Log::error('Database connection failed', ['error' => $e->getMessage()]);
                 throw new \Exception('Database connection failed: ' . $e->getMessage());
             }
-            
+
             // Set limits
             set_time_limit(300);
             ini_set('memory_limit', '512M');
             \Log::info('Limits set');
-            
+
             // Generate SQL backup in memory
             \Log::info('Calling generateAndDownload');
             $sqlContent = $service->generateAndDownload();
             \Log::info('generateAndDownload completed', ['size' => strlen($sqlContent)]);
-            
+
             if (empty($sqlContent)) {
                 throw new \Exception('Backup content is empty');
             }
-            
+
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '.sql';
             \Log::info('Filename generated', ['filename' => $filename]);
-            
+
             // Stream download langsung tanpa save
             \Log::info('Returning stream download');
             return response()->streamDownload(function() use ($sqlContent) {
@@ -102,7 +102,7 @@ class BackupController extends Controller
                 'file' => $e->getFile(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             // Always return JSON error for debugging
             return response()->json([
                 'success' => false,
@@ -130,19 +130,19 @@ class BackupController extends Controller
                 'filename' => $filename,
                 'full_path' => $fullPath
             ]);
-            
+
             // Check if backup record exists in database
             $backup = DB::table('backups')->where('filename', $filename)->first();
             if (!$backup) {
                 abort(404, 'File backup tidak ditemukan dan tidak ada record di database.');
             }
-            
+
             // Generate fresh backup and download immediately
             try {
                 $service = app(DatabaseBackupService::class);
                 $result = $service->generate();
                 $newPath = storage_path('app/backups/' . $result['filename']);
-                
+
                 if (file_exists($newPath)) {
                     return response()->download($newPath, $result['filename'], [
                         'Content-Type' => 'application/sql',
@@ -151,7 +151,7 @@ class BackupController extends Controller
             } catch (\Exception $e) {
                 \Log::error('Failed to regenerate backup: ' . $e->getMessage());
             }
-            
+
             abort(404, 'File backup tidak ditemukan. Silakan buat backup baru.');
         }
 
