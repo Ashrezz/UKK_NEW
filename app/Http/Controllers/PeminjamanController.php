@@ -357,20 +357,22 @@ class PeminjamanController extends Controller
             ->whereIn('status', ['pending', 'disetujui'])
             ->delete();
         
-        // Fetch regular (non-priority) bookings
+        // Fetch regular (non-priority) bookings - users with prioritas_level = 0 AND badge = 0
         $peminjaman = Peminjaman::with('ruang', 'user')
-            ->where('status', '!=', 'disetujui')
             ->whereHas('user', function($q) {
-                $q->where('prioritas_level', '=', 0);
+                $q->where('prioritas_level', '=', 0)
+                  ->where('badge', '=', 0);
             })
             ->latest()
             ->get();
 
-        // Fetch priority bookings
+        // Fetch priority bookings - users with prioritas_level > 0 OR badge > 0
         $prioritas = Peminjaman::with('ruang', 'user')
-            ->where('status', '!=', 'disetujui')
             ->whereHas('user', function($q) {
-                $q->where('prioritas_level', '>', 0);
+                $q->where(function($query) {
+                    $query->where('prioritas_level', '>', 0)
+                          ->orWhere('badge', '>', 0);
+                });
             })
             ->latest()
             ->get();
