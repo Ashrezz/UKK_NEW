@@ -46,7 +46,14 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $user->id }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ $user->username ?? $user->name }}</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-sm font-medium text-gray-900">{{ $user->username ?? $user->name }}</div>
+                                @if(($user->badge ?? 0) > 0)
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold" style="background:#fef3c7;color:#92400e">
+                                        ⭐{{ $user->badge }}
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $user->email }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">

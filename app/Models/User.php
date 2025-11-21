@@ -22,6 +22,7 @@ class User extends Authenticatable
         'no_hp',
         'prioritas_level',
         'prioritas_since',
+        'badge',
     ];
 
     protected $hidden = [
@@ -65,6 +66,10 @@ class User extends Authenticatable
             $this->prioritas_level = $newLevel;
             if ($oldLevel === 0 && $newLevel > 0 && empty($this->prioritas_since)) {
                 $this->prioritas_since = now();
+            }
+            // Set badge to 1 when user becomes priority customer
+            if ($oldLevel === 0 && $newLevel > 0 && $this->badge === 0) {
+                $this->badge = 1;
             }
             $this->save();
         }

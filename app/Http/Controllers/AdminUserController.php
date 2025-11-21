@@ -75,6 +75,7 @@ class AdminUserController extends Controller
             'no_hp' => 'required|string|min:8|max:30',
             'password' => 'nullable|string|min:8',
             'role' => 'required|in:admin,petugas,user',
+            'badge' => 'nullable|integer|min:0|max:3',
         ], [
             'password.min' => 'Password harus minimal 8 karakter',
         ]);
@@ -85,6 +86,7 @@ class AdminUserController extends Controller
             'email' => $request->email,
             'no_hp' => $request->no_hp,
             'role' => $request->role,
+            'badge' => $request->input('badge', 0),
         ];
 
         // Only update password if provided

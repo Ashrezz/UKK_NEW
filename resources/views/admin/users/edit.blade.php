@@ -75,6 +75,21 @@
                 </select>
             </div>
 
+            <!-- Badge (Priority Customer Badge) -->
+            <div class="mb-4">
+                <label for="badge" class="block text-sm font-medium text-black mb-2">
+                    Badge Pelanggan Prioritas
+                </label>
+                <select name="badge" id="badge"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500">
+                    <option value="0" {{ old('badge', $user->badge ?? 0) == 0 ? 'selected' : '' }}>Tidak Ada Badge</option>
+                    <option value="1" {{ old('badge', $user->badge ?? 0) == 1 ? 'selected' : '' }}>Badge 1</option>
+                    <option value="2" {{ old('badge', $user->badge ?? 0) == 2 ? 'selected' : '' }}>Badge 2</option>
+                    <option value="3" {{ old('badge', $user->badge ?? 0) == 3 ? 'selected' : '' }}>Badge 3</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Badge dimulai dari 1 saat user menjadi pelanggan prioritas (prioritas_level > 0)</p>
+            </div>
+
             <!-- Password (Optional) -->
             <div class="mb-4">
                 <label for="password" class="block text-sm font-medium text-black mb-2">
