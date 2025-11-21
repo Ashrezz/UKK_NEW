@@ -74,9 +74,16 @@
             <div class="absolute bottom-4 left-4 right-4">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-700 font-semibold">{{ strtoupper(substr(auth()->user()->username,0,1)) }}</div>
-                    <div>
+                    <div class="flex-1">
                         <div class="font-medium">{{ auth()->user()->username }}</div>
-                        <div class="text-xs muted">{{ auth()->user()->role }}</div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs muted">{{ auth()->user()->role }}</span>
+                            @if((auth()->user()->badge ?? 0) > 0)
+                                <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-semibold" style="background:#fef3c7;color:#92400e;font-size:10px">
+                                    ⭐{{ auth()->user()->badge }}
+                                </span>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
