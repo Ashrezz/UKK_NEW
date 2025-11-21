@@ -44,8 +44,22 @@
                     </thead>
                     <tbody class="divide-y">
                         @foreach($jadwal as $j)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 font-medium">{{ $j->ruang->nama_ruang }}</td>
+                        @php
+                            $isHighlighted = request()->has('notif') && request('notif') == $j->id;
+                        @endphp
+                        <tr class="hover:bg-gray-50 transition-colors {{ $isHighlighted ? 'bg-blue-100 animate-pulse' : '' }}" id="booking-{{ $j->id }}">
+                            <td class="px-4 py-3 font-medium">
+                                @if($isHighlighted)
+                                    <span class="inline-flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                                        </svg>
+                                        {{ $j->ruang->nama_ruang }}
+                                    </span>
+                                @else
+                                    {{ $j->ruang->nama_ruang }}
+                                @endif
+                            </td>
                             <td class="px-4 py-3 muted">{{ $j->tanggal }}</td>
                             <td class="px-4 py-3 muted">{{ $j->jam_mulai }} - {{ $j->jam_selesai }}</td>
                             <td class="px-4 py-3 muted">{{ $j->user->name }}</td>
@@ -143,5 +157,22 @@
 
                 if (reasonBackdrop) reasonBackdrop.addEventListener('click', closeReasonModal);
                 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { if (!reasonModal.classList.contains('hidden')) closeReasonModal(); } });
+                
+                // Auto scroll to highlighted booking from notification
+                @if(request()->has('notif'))
+                document.addEventListener('DOMContentLoaded', function() {
+                    const bookingId = "{{ request('notif') }}";
+                    const element = document.getElementById('booking-' + bookingId);
+                    if (element) {
+                        setTimeout(() => {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Remove highlight after 5 seconds
+                            setTimeout(() => {
+                                element.classList.remove('bg-blue-100', 'animate-pulse');
+                            }, 5000);
+                        }, 500);
+                    }
+                });
+                @endif
             </script>
 @endsection

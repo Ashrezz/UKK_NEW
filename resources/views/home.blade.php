@@ -57,7 +57,7 @@
                             Tingkatkan badge Anda ke level berikutnya!
                         @endif
                     </p>
-                    
+
                     <!-- Progress: Jumlah Peminjaman -->
                     <div class="mb-4">
                         <div class="flex justify-between items-center mb-2">
@@ -69,7 +69,7 @@
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ $badgeProgress['count_percent'] }}% tercapai</p>
                     </div>
-                    
+
                     <!-- Progress: Total Transaksi -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
@@ -81,7 +81,7 @@
                         </div>
                         <p class="text-xs text-gray-500 mt-1">{{ $badgeProgress['total_percent'] }}% tercapai</p>
                     </div>
-                    
+
                     @php
                         $remainingCount = max(0, $badgeProgress['target_count'] - $badgeProgress['current_count']);
                         $remainingTotal = max(0, $badgeProgress['target_total'] - $badgeProgress['current_total']);

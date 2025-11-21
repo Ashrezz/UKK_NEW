@@ -6,6 +6,7 @@ use App\Http\Controllers\RuangController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
@@ -59,6 +60,8 @@ Route::get('/pembayaran/populate-missing-blobs', [PembayaranController::class, '
 // Admin/Petugas
 Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);
+    // Notifications
+    Route::get('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
     // Laporan peminjaman (admin / petugas)

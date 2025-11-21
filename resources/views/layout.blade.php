@@ -55,6 +55,36 @@
                 @if(auth()->user()->role == 'admin' || auth()->user()->role == 'petugas')
                     <a href="{{ url('/ruang') }}" class="sidebar-link {{ request()->is('ruang*') ? 'active' : ''}}">Kelola Ruang</a>
                     <a href="{{ route('peminjaman.manage') }}" class="sidebar-link {{ request()->routeIs('peminjaman.manage') ? 'active' : ''}}">Kelola Peminjaman</a>
+                    
+                    @php
+                        $unreadNotifications = \App\Models\Notification::where('is_read', false)->orderBy('created_at', 'desc')->take(5)->get();
+                        $unreadCount = \App\Models\Notification::where('is_read', false)->count();
+                    @endphp
+                    
+                    @if($unreadCount > 0)
+                    <div class="mt-4 mb-2">
+                        <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
+                            Notifikasi Booking ({{ $unreadCount }})
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1 max-h-64 overflow-y-auto">
+                        @foreach($unreadNotifications as $notif)
+                        <a href="{{ route('notifications.read', $notif->id) }}" class="block p-3 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors">
+                            <div class="flex items-start gap-2">
+                                <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                                </svg>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-blue-900 truncate">{{ $notif->title }}</p>
+                                    <p class="text-xs text-blue-700 mt-0.5 line-clamp-2">{{ $notif->message }}</p>
+                                    <p class="text-xs text-blue-600 mt-1">{{ $notif->created_at->diffForHumans() }}</p>
+                                </div>
+                            </div>
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
                 @endif
 
                 @if(auth()->user()->role == 'admin')

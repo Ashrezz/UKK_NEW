@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Peminjaman;
 use App\Models\Ruang;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -76,7 +77,7 @@ class PeminjamanController extends Controller
     public function index()
     {
         $peminjaman = Peminjaman::with('ruang', 'user')->latest()->get();
-        
+
         // Calculate badge progress for current user
         $badgeProgress = null;
         if (auth()->check()) {
@@ -86,18 +87,18 @@ class PeminjamanController extends Controller
                 ->whereIn('status_pembayaran', ['terverifikasi', 'lunas'])
                 ->select(DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(biaya),0) as total'))
                 ->first();
-            
+
             $currentCount = (int)($stats->count ?? 0);
             $currentTotal = (int)($stats->total ?? 0);
             $currentBadge = (int)($user->badge ?? 0);
-            
+
             // Badge tiers: Badge 1=20/700k, Badge 2=50/1.2M, Badge 3=100/1.5M
             $badgeTiers = [
                 1 => ['min_count' => 20, 'min_total' => 700000, 'name' => 'Badge 1'],
                 2 => ['min_count' => 50, 'min_total' => 1200000, 'name' => 'Badge 2'],
                 3 => ['min_count' => 100, 'min_total' => 1500000, 'name' => 'Badge 3'],
             ];
-            
+
             $nextBadge = $currentBadge + 1;
             if ($nextBadge <= 3 && isset($badgeTiers[$nextBadge])) {
                 $target = $badgeTiers[$nextBadge];
@@ -123,7 +124,7 @@ class PeminjamanController extends Controller
                 ];
             }
         }
-        
+
         return view('home', compact('peminjaman', 'badgeProgress'));
     }
 
@@ -325,6 +326,15 @@ class PeminjamanController extends Controller
                 'waktu_pembayaran' => now()
             ]);
         }
+        
+        // Create notification for admin/petugas
+        Notification::create([
+            'peminjaman_id' => $peminjaman->id,
+            'type' => 'booking',
+            'title' => 'Booking Baru dari ' . auth()->user()->name,
+            'message' => 'Peminjaman ' . $peminjaman->ruang->nama_ruang . ' pada ' . date('d M Y', strtotime($peminjaman->tanggal)) . ' jam ' . $peminjaman->jam_mulai . '-' . $peminjaman->jam_selesai,
+            'is_read' => false,
+        ]);
 
         return redirect()->route('home')->with('success', 'Pengajuan peminjaman berhasil dibuat!');
     }
