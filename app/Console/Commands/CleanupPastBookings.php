@@ -55,7 +55,7 @@ class CleanupPastBookings extends Command
         // Log the cleanup
         $logPath = storage_path('logs/auto_cleanup.log');
         $message = '[' . $now->toDateTimeString() . '] Auto cleanup completed. Deleted: ' . $deletedCount . ' bookings.' . PHP_EOL;
-        
+
         try {
             file_put_contents($logPath, $message, FILE_APPEND | LOCK_EX);
         } catch (\Throwable $e) {
@@ -63,7 +63,7 @@ class CleanupPastBookings extends Command
         }
 
         $this->info("Cleanup completed! Deleted {$deletedCount} past bookings.");
-        
+
         return Command::SUCCESS;
     }
 }

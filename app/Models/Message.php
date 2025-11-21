@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'from_user_id',
         'subject',
@@ -20,23 +20,23 @@ class Message extends Model
         'replied_by',
         'replied_at',
     ];
-    
+
     protected $casts = [
         'is_read' => 'boolean',
         'read_at' => 'datetime',
         'replied_at' => 'datetime',
     ];
-    
+
     public function sender()
     {
         return $this->belongsTo(User::class, 'from_user_id');
     }
-    
+
     public function reader()
     {
         return $this->belongsTo(User::class, 'read_by');
     }
-    
+
     public function replier()
     {
         return $this->belongsTo(User::class, 'replied_by');

@@ -55,9 +55,10 @@
                 @if(auth()->user()->role == 'admin' || auth()->user()->role == 'petugas')
                     <a href="{{ url('/ruang') }}" class="sidebar-link {{ request()->is('ruang*') ? 'active' : ''}}">Kelola Ruang</a>
                     <a href="{{ route('peminjaman.manage') }}" class="sidebar-link {{ request()->routeIs('peminjaman.manage') ? 'active' : ''}}">Kelola Peminjaman</a>
-                    <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.*') ? 'active' : ''}}">Pesan dari User</a>
+                    <a href="{{ route('messages.index') }}" class="sidebar-link {{ request()->routeIs('messages.index') ? 'active' : ''}}">Pesan dari User</a>
                 @else
-                    <a href="{{ route('messages.create') }}" class="sidebar-link {{ request()->routeIs('messages.create') ? 'active' : ''}}">Kirim Pesan ke Admin</a>
+                    <a href="{{ route('messages.create') }}" class="sidebar-link {{ request()->routeIs('messages.create') ? 'active' : ''}}">Kirim Pesan Baru</a>
+                    <a href="{{ route('messages.my') }}" class="sidebar-link {{ request()->routeIs('messages.my') ? 'active' : ''}}">Pesan Saya</a>
                 @endif
 
                 @if(auth()->user()->role == 'admin')
@@ -95,6 +96,40 @@
     @endif
 
     <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-40 md:hidden"></div>
+
+    @if(!request()->routeIs('login') && !request()->is('register'))
+    <!-- Top Navbar with Notification Icon -->
+    <nav class="fixed top-0 right-0 left-0 md:left-64 bg-white border-b border-gray-200 z-30 h-16">
+        <div class="h-full px-4 flex items-center justify-end gap-4">
+            @auth
+                @if(auth()->user()->role == 'admin' || auth()->user()->role == 'petugas')
+                    <!-- Notification Bell Icon -->
+                    <a href="{{ route('home') }}#notifications" class="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        @php
+                            $unreadCount = \App\Models\Notification::where('is_read', false)->count();
+                        @endphp
+                        @if($unreadCount > 0)
+                            <span class="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                                {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                            </span>
+                        @endif
+                    </a>
+                @endif
+
+                <!-- User Info -->
+                <div class="flex items-center gap-2 pl-4 border-l border-gray-200">
+                    <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm">
+                        {{ strtoupper(substr(auth()->user()->username,0,1)) }}
+                    </div>
+                    <span class="text-sm font-medium hidden sm:inline">{{ auth()->user()->username }}</span>
+                </div>
+            @endauth
+        </div>
+    </nav>
+    @endif
 
     <!-- Main -->
     <main class="@if(request()->routeIs('login') || request()->is('register')) w-full @else pt-20 md:pl-64 @endif">

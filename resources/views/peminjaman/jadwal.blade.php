@@ -157,7 +157,7 @@
 
                 if (reasonBackdrop) reasonBackdrop.addEventListener('click', closeReasonModal);
                 document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { if (!reasonModal.classList.contains('hidden')) closeReasonModal(); } });
-                
+
                 // Auto scroll to highlighted booking from notification
                 @if(request()->has('notif'))
                 document.addEventListener('DOMContentLoaded', function() {

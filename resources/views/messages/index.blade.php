@@ -30,7 +30,7 @@
                                 @endif
                                 <h3 class="text-lg font-semibold text-gray-900">{{ $message->subject }}</h3>
                             </div>
-                            
+
                             <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -45,17 +45,17 @@
                                     <span>{{ $message->created_at->format('d M Y, H:i') }}</span>
                                 </div>
                             </div>
-                            
+
                             <div class="prose max-w-none">
                                 <p class="text-gray-700 whitespace-pre-wrap">{{ $message->message }}</p>
                             </div>
-                            
+
                             @if($message->is_read)
                             <div class="mt-4 text-xs text-gray-500">
                                 Dibaca oleh {{ $message->reader->name }} pada {{ $message->read_at->format('d M Y, H:i') }}
                             </div>
                             @endif
-                            
+
                             <!-- Reply Section -->
                             @if($message->reply)
                             <div class="mt-6 pt-4 border-t border-gray-200">
@@ -91,7 +91,7 @@
                             </div>
                             @endif
                         </div>
-                        
+
                         @if(!$message->is_read)
                         <form action="{{ route('messages.read', $message->id) }}" method="POST">
                             @csrf

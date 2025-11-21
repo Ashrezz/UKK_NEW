@@ -485,7 +485,7 @@
 
     // Activate default tab
     switchTab('regular');
-    
+
     // Auto scroll to highlighted booking from notification
     @if(request()->has('notif'))
     document.addEventListener('DOMContentLoaded', function() {

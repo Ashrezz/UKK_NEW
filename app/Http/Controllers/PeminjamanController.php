@@ -289,6 +289,15 @@ class PeminjamanController extends Controller
         $diskonPersen = (int)(auth()->user()->prioritas_discount_percent ?? 0);
         $biayaAkhir = (int)round($biayaDasar * (100 - $diskonPersen) / 100);
 
+        // Calculate priority score: Badge 3 = 100, Badge 2 = 50, Badge 1 = 25, Regular = 0
+        $userBadge = (int)(auth()->user()->badge ?? 0);
+        $priorityScore = match($userBadge) {
+            3 => 100,
+            2 => 50,
+            1 => 25,
+            default => 0,
+        };
+
         $peminjaman = Peminjaman::create([
             'user_id' => Auth::id(),
             'ruang_id' => $request->ruang_id,
@@ -299,6 +308,7 @@ class PeminjamanController extends Controller
             'status' => 'pending',
             'biaya' => $biayaAkhir,
             'diskon_persen' => $diskonPersen,
+            'priority_score' => $priorityScore,
             'status_pembayaran' => 'belum_bayar'
         ]);
 
@@ -326,7 +336,7 @@ class PeminjamanController extends Controller
                 'waktu_pembayaran' => now()
             ]);
         }
-        
+
         // Create notification for admin/petugas
         Notification::create([
             'peminjaman_id' => $peminjaman->id,
@@ -356,17 +366,18 @@ class PeminjamanController extends Controller
         Peminjaman::where('tanggal', '<', $yesterday)
             ->whereIn('status', ['pending', 'disetujui'])
             ->delete();
-        
+
         // Fetch regular (non-priority) bookings - users with prioritas_level = 0 AND badge = 0
         $peminjaman = Peminjaman::with('ruang', 'user')
             ->whereHas('user', function($q) {
                 $q->where('prioritas_level', '=', 0)
                   ->where('badge', '=', 0);
             })
-            ->latest()
+            ->orderBy('created_at', 'desc')
             ->get();
 
         // Fetch priority bookings - users with prioritas_level > 0 OR badge > 0
+        // Sort by priority_score (highest first), then by created_at
         $prioritas = Peminjaman::with('ruang', 'user')
             ->whereHas('user', function($q) {
                 $q->where(function($query) {
@@ -374,7 +385,8 @@ class PeminjamanController extends Controller
                           ->orWhere('badge', '>', 0);
                 });
             })
-            ->latest()
+            ->orderBy('priority_score', 'desc')
+            ->orderBy('created_at', 'asc')
             ->get();
 
         return view('peminjaman.manage', compact('peminjaman', 'prioritas'));
@@ -403,7 +415,24 @@ class PeminjamanController extends Controller
         // Update user priority badge if thresholds are met
         try { $pinjam->user?->recalculatePrioritas(); } catch (\Throwable $e) { /* ignore */ }
 
-        return back()->with('success', 'Peminjaman disetujui dan pembayaran ditandai terverifikasi');
+        // Create automatic confirmation message to user
+        $adminName = auth()->user()->name;
+        $ruangName = $pinjam->ruang->nama_ruang;
+        $tanggal = date('d M Y', strtotime($pinjam->tanggal));
+        $jamMulai = $pinjam->jam_mulai;
+        $jamSelesai = $pinjam->jam_selesai;
+
+        \App\Models\Message::create([
+            'from_user_id' => $pinjam->user_id,
+            'subject' => 'Konfirmasi Peminjaman - ' . $ruangName,
+            'message' => "Halo {$pinjam->user->name},\n\nPeminjaman Anda untuk ruang {$ruangName} pada tanggal {$tanggal} jam {$jamMulai}-{$jamSelesai} telah DISETUJUI oleh {$adminName}.\n\nMohon konfirmasi apakah Anda masih akan menggunakan ruang tersebut?\n\nSilakan balas pesan ini dengan:\n- \"Ya\" jika Anda akan tetap menggunakan ruang\n- \"Tidak\" jika Anda ingin membatalkan\n\nTerima kasih.",
+            'is_read' => false,
+            'reply' => null,
+            'replied_by' => auth()->id(),
+            'replied_at' => null,
+        ]);
+
+        return back()->with('success', 'Peminjaman disetujui, pembayaran terverifikasi, dan pesan konfirmasi telah dikirim ke user');
     }
 
     public function reject(Request $request, $id)

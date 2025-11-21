@@ -31,10 +31,12 @@ Route::post('/password/reset/update', [AuthController::class, 'updatePassword'])
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    
+
     // Messages
     Route::get('/messages/create', [MessageController::class, 'create'])->name('messages.create');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/my', [MessageController::class, 'userMessages'])->name('messages.my');
+    Route::post('/messages/{id}/confirm', [MessageController::class, 'confirm'])->name('messages.confirm');
 });
 
 // Peminjaman

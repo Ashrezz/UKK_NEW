@@ -15,7 +15,7 @@ return new class extends Migration
             $table->text('reply')->nullable()->after('message');
             $table->unsignedBigInteger('replied_by')->nullable()->after('reply');
             $table->timestamp('replied_at')->nullable()->after('replied_by');
-            
+
             $table->foreign('replied_by')->references('id')->on('users')->onDelete('set null');
         });
     }

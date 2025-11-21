@@ -21,6 +21,7 @@ class Peminjaman extends Model
         'status',
         'biaya',
         'diskon_persen',
+        'priority_score',
         'bukti_pembayaran',
         'bukti_pembayaran_blob',
         'bukti_pembayaran_mime',

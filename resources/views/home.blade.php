@@ -20,7 +20,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Notifications for Admin/Petugas (Right Side) -->
     @if(auth()->user()->role == 'admin' || auth()->user()->role == 'petugas')
     @php
@@ -29,7 +29,7 @@
         $unreadMessages = \App\Models\Message::where('is_read', false)->orderBy('created_at', 'desc')->take(5)->get();
         $unreadMessageCount = \App\Models\Message::where('is_read', false)->count();
     @endphp
-    
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div class="lg:col-span-2">
             <!-- Stats will go here -->
@@ -62,7 +62,7 @@
                 </div>
             </div>
             @endif
-            
+
             <!-- Messages Card -->
             @if($unreadMessageCount > 0)
             <div class="card p-4">

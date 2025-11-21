@@ -12,18 +12,18 @@ class NotificationController extends Controller
         $this->middleware('auth');
         $this->middleware('role:admin,petugas');
     }
-    
+
     public function markAsRead($id)
     {
         $notification = Notification::findOrFail($id);
-        
+
         // Mark as read by current admin/petugas
         $notification->update([
             'is_read' => true,
             'read_by' => auth()->id(),
             'read_at' => now(),
         ]);
-        
+
         // Redirect to kelola peminjaman with notification ID to highlight the booking
         return redirect()->route('peminjaman.manage', ['notif' => $notification->peminjaman_id])
             ->with('notif_booking_id', $notification->peminjaman_id);
