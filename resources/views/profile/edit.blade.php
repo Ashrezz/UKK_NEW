@@ -103,7 +103,7 @@
                         @else
                         <p class="text-xs text-gray-500 mt-1">Belum menjadi pelanggan prioritas</p>
                         @endif
-                        
+
                         <!-- Badge Display with Tooltip -->
                         <div class="flex items-center gap-2 mt-2">
                             @php $userBadge = $user->badge ?? 0; @endphp
@@ -144,7 +144,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <style>
             .badge-tooltip-container:hover .badge-tooltip {
                 display: block;

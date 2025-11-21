@@ -76,7 +76,55 @@ class PeminjamanController extends Controller
     public function index()
     {
         $peminjaman = Peminjaman::with('ruang', 'user')->latest()->get();
-        return view('home', compact('peminjaman'));
+        
+        // Calculate badge progress for current user
+        $badgeProgress = null;
+        if (auth()->check()) {
+            $user = auth()->user();
+            $stats = $user->peminjaman()
+                ->where('status', 'disetujui')
+                ->whereIn('status_pembayaran', ['terverifikasi', 'lunas'])
+                ->select(DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(biaya),0) as total'))
+                ->first();
+            
+            $currentCount = (int)($stats->count ?? 0);
+            $currentTotal = (int)($stats->total ?? 0);
+            $currentBadge = (int)($user->badge ?? 0);
+            
+            // Badge tiers: Badge 1=20/700k, Badge 2=50/1.2M, Badge 3=100/1.5M
+            $badgeTiers = [
+                1 => ['min_count' => 20, 'min_total' => 700000, 'name' => 'Badge 1'],
+                2 => ['min_count' => 50, 'min_total' => 1200000, 'name' => 'Badge 2'],
+                3 => ['min_count' => 100, 'min_total' => 1500000, 'name' => 'Badge 3'],
+            ];
+            
+            $nextBadge = $currentBadge + 1;
+            if ($nextBadge <= 3 && isset($badgeTiers[$nextBadge])) {
+                $target = $badgeTiers[$nextBadge];
+                $badgeProgress = [
+                    'current_badge' => $currentBadge,
+                    'next_badge' => $nextBadge,
+                    'current_count' => $currentCount,
+                    'target_count' => $target['min_count'],
+                    'current_total' => $currentTotal,
+                    'target_total' => $target['min_total'],
+                    'count_percent' => min(100, round(($currentCount / $target['min_count']) * 100)),
+                    'total_percent' => min(100, round(($currentTotal / $target['min_total']) * 100)),
+                    'next_badge_name' => $target['name'],
+                ];
+            } elseif ($currentBadge >= 3) {
+                // User already at max badge
+                $badgeProgress = [
+                    'current_badge' => $currentBadge,
+                    'next_badge' => null,
+                    'current_count' => $currentCount,
+                    'current_total' => $currentTotal,
+                    'is_max' => true,
+                ];
+            }
+        }
+        
+        return view('home', compact('peminjaman', 'badgeProgress'));
     }
 
     public function create(Request $request)

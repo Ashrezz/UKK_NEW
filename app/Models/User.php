@@ -44,7 +44,7 @@ class User extends Authenticatable
             $badgeDiscounts = [1 => 5, 2 => 10, 3 => 15];
             return (int)($badgeDiscounts[$badge] ?? 0);
         }
-        
+
         // Fallback ke diskon berdasarkan prioritas level
         $discounts = config('prioritas.discounts', [0 => 0, 1 => 5, 2 => 15, 3 => 25]);
         $level = (int)($this->prioritas_level ?? 0);

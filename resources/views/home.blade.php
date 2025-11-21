@@ -21,6 +21,93 @@
         </div>
     </div>
 
+    <!-- Badge Progress Card (for regular users) -->
+    @if(auth()->user()->role !== 'admin' && auth()->user()->role !== 'petugas' && $badgeProgress)
+    <div class="card p-6 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                    @if($badgeProgress['current_badge'] > 0)
+                        ⭐{{ $badgeProgress['current_badge'] }}
+                    @else
+                        🎯
+                    @endif
+                </div>
+            </div>
+            <div class="flex-1">
+                @if(isset($badgeProgress['is_max']) && $badgeProgress['is_max'])
+                    <h3 class="text-lg font-semibold mb-2">🏆 Badge Maksimal Tercapai!</h3>
+                    <p class="text-sm text-gray-600 mb-3">Selamat! Anda telah mencapai Badge 3 (level tertinggi)</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-blue-50 rounded-lg">
+                            <p class="text-xs text-gray-600">Total Peminjaman</p>
+                            <p class="text-xl font-bold text-blue-600">{{ $badgeProgress['current_count'] }}</p>
+                        </div>
+                        <div class="p-3 bg-green-50 rounded-lg">
+                            <p class="text-xs text-gray-600">Total Transaksi</p>
+                            <p class="text-xl font-bold text-green-600">Rp {{ number_format($badgeProgress['current_total'], 0, ',', '.') }}</p>
+                        </div>
+                    </div>
+                @else
+                    <h3 class="text-lg font-semibold mb-1">Progress Menuju {{ $badgeProgress['next_badge_name'] }}</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        @if($badgeProgress['current_badge'] == 0)
+                            Selesaikan {{ $badgeProgress['target_count'] }} peminjaman dengan total Rp {{ number_format($badgeProgress['target_total'], 0, ',', '.') }} untuk mendapatkan badge pertama!
+                        @else
+                            Tingkatkan badge Anda ke level berikutnya!
+                        @endif
+                    </p>
+                    
+                    <!-- Progress: Jumlah Peminjaman -->
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Jumlah Peminjaman</span>
+                            <span class="text-sm font-semibold text-blue-600">{{ $badgeProgress['current_count'] }} / {{ $badgeProgress['target_count'] }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500" style="width: {{ $badgeProgress['count_percent'] }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ $badgeProgress['count_percent'] }}% tercapai</p>
+                    </div>
+                    
+                    <!-- Progress: Total Transaksi -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Total Transaksi</span>
+                            <span class="text-sm font-semibold text-green-600">Rp {{ number_format($badgeProgress['current_total'], 0, ',', '.') }} / Rp {{ number_format($badgeProgress['target_total'], 0, ',', '.') }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500" style="width: {{ $badgeProgress['total_percent'] }}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ $badgeProgress['total_percent'] }}% tercapai</p>
+                    </div>
+                    
+                    @php
+                        $remainingCount = max(0, $badgeProgress['target_count'] - $badgeProgress['current_count']);
+                        $remainingTotal = max(0, $badgeProgress['target_total'] - $badgeProgress['current_total']);
+                    @endphp
+                    @if($remainingCount > 0 || $remainingTotal > 0)
+                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-xs text-yellow-800">
+                            <strong>Sisa yang dibutuhkan:</strong>
+                            @if($remainingCount > 0)
+                                {{ $remainingCount }} peminjaman lagi
+                            @endif
+                            @if($remainingCount > 0 && $remainingTotal > 0)
+                                dan
+                            @endif
+                            @if($remainingTotal > 0)
+                                Rp {{ number_format($remainingTotal, 0, ',', '.') }} lagi
+                            @endif
+                        </p>
+                    </div>
+                    @endif
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Stats -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="stats-card card">

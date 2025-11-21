@@ -154,7 +154,7 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-1">
                                     <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                                    <span class="text-xs font-medium text-green-700">Diskon 
+                                    <span class="text-xs font-medium text-green-700">Diskon
                                     @if((auth()->user()->badge ?? 0) > 0)
                                         Badge {{ auth()->user()->badge }}
                                     @else
@@ -311,14 +311,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (duration < 0) duration = 0;
 
             const subtotal = duration * rate;
-            
+
             // Apply user discount if any
             @auth
             const discountPercent = {{ auth()->user()->prioritas_discount_percent ?? 0 }};
             @else
             const discountPercent = 0;
             @endauth
-            
+
             const discountAmount = subtotal * (discountPercent / 100);
             const total = subtotal - discountAmount;
 
@@ -326,12 +326,12 @@ document.addEventListener('DOMContentLoaded', function() {
             rateDisplay.textContent = `Rp ${rate.toLocaleString('id-ID')}`;
             durationDisplay2.textContent = `${duration} jam`;
             durationDisplay.textContent = `${duration} jam`;
-            
+
             const subtotalDisplay = document.getElementById('subtotalDisplay');
             if (subtotalDisplay) {
                 subtotalDisplay.textContent = `Rp ${subtotal.toLocaleString('id-ID')}`;
             }
-            
+
             totalDisplay.textContent = `Rp ${Math.round(total).toLocaleString('id-ID')}`;
             biayaInput.value = Math.round(total);
         } else {
