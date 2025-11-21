@@ -234,7 +234,11 @@ class PeminjamanController extends Controller
         $mulai = strtotime($request->jam_mulai);
         $selesai = strtotime($request->jam_selesai);
         $durasi = ceil(($selesai - $mulai) / 3600); // Duration in hours
-        $biaya = $durasi * 50000; // Rp. 50.000 per hour
+        $biayaDasar = $durasi * 50000; // Rp. 50.000 per hour
+
+        // Apply priority discount if any
+        $diskonPersen = (int)(auth()->user()->prioritas_discount_percent ?? 0);
+        $biayaAkhir = (int)round($biayaDasar * (100 - $diskonPersen) / 100);
 
         $peminjaman = Peminjaman::create([
             'user_id' => Auth::id(),
@@ -244,7 +248,8 @@ class PeminjamanController extends Controller
             'jam_selesai' => $request->jam_selesai,
             'keperluan' => $request->keperluan,
             'status' => 'pending',
-            'biaya' => $biaya,
+            'biaya' => $biayaAkhir,
+            'diskon_persen' => $diskonPersen,
             'status_pembayaran' => 'belum_bayar'
         ]);
 
@@ -288,11 +293,25 @@ class PeminjamanController extends Controller
 
     public function manage()
     {
+        // Fetch regular (non-priority) bookings
         $peminjaman = Peminjaman::with('ruang', 'user')
             ->where('status', '!=', 'disetujui')
+            ->whereHas('user', function($q) {
+                $q->where('prioritas_level', '=', 0);
+            })
             ->latest()
             ->get();
-        return view('peminjaman.manage', compact('peminjaman'));
+
+        // Fetch priority bookings
+        $prioritas = Peminjaman::with('ruang', 'user')
+            ->where('status', '!=', 'disetujui')
+            ->whereHas('user', function($q) {
+                $q->where('prioritas_level', '>', 0);
+            })
+            ->latest()
+            ->get();
+
+        return view('peminjaman.manage', compact('peminjaman', 'prioritas'));
     }
 
     public function verifikasiPembayaran()
@@ -314,6 +333,9 @@ class PeminjamanController extends Controller
             'status_pembayaran' => 'terverifikasi',
             'waktu_pembayaran' => $pinjam->waktu_pembayaran ?? now()
         ]);
+
+        // Update user priority badge if thresholds are met
+        try { $pinjam->user?->recalculatePrioritas(); } catch (\Throwable $e) { /* ignore */ }
 
         return back()->with('success', 'Peminjaman disetujui dan pembayaran ditandai terverifikasi');
     }
@@ -454,11 +476,15 @@ class PeminjamanController extends Controller
             return back()->with('error', 'Ruang sudah dibooking pada waktu tersebut!');
         }
 
-        // Recalculate biaya if time changed
+        // Recalculate biaya and apply discount
         $mulai = strtotime($request->jam_mulai);
         $selesai = strtotime($request->jam_selesai);
         $durasi = ceil(($selesai - $mulai) / 3600);
-        $biaya = $durasi * 50000;
+        $biayaDasar = $durasi * 50000;
+        // Use the booking owner's priority for discount
+        $pemilik = $peminjaman->user()->first();
+        $diskonPersen = (int)($pemilik?->prioritas_discount_percent ?? 0);
+        $biayaAkhir = (int)round($biayaDasar * (100 - $diskonPersen) / 100);
 
         $peminjaman->update([
             'ruang_id' => $request->ruang_id,
@@ -466,7 +492,8 @@ class PeminjamanController extends Controller
             'jam_mulai' => $request->jam_mulai,
             'jam_selesai' => $request->jam_selesai,
             'keperluan' => $request->keperluan,
-            'biaya' => $biaya,
+            'biaya' => $biayaAkhir,
+            'diskon_persen' => $diskonPersen,
         ]);
 
         return redirect()->route('home')->with('success', 'Peminjaman berhasil diupdate!');

@@ -54,7 +54,7 @@
                 <!-- Verification Form -->
                 <form action="{{ route('password.verify.post') }}" method="POST" class="space-y-6">
                     @csrf
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-3 text-center">
                             Kode Verifikasi (6 digit)
@@ -75,7 +75,7 @@
                         @enderror
                     </div>
 
-                    <button 
+                    <button
                         type="submit"
                         id="verify-btn"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
@@ -123,11 +123,11 @@
         inputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
                 const value = e.target.value;
-                
+
                 if (value.length === 1 && index < inputs.length - 1) {
                     inputs[index + 1].focus();
                 }
-                
+
                 // Update hidden input
                 updateFinalCode();
             });
@@ -141,15 +141,15 @@
             input.addEventListener('paste', (e) => {
                 e.preventDefault();
                 const pasteData = e.clipboardData.getData('text').slice(0, 6);
-                
+
                 pasteData.split('').forEach((char, i) => {
                     if (inputs[i]) {
                         inputs[i].value = char;
                     }
                 });
-                
+
                 updateFinalCode();
-                
+
                 if (pasteData.length === 6) {
                     inputs[5].focus();
                 }
@@ -159,7 +159,7 @@
         function updateFinalCode() {
             const code = Array.from(inputs).map(input => input.value).join('');
             finalCodeInput.value = code;
-            
+
             if (code.length === 6) {
                 verifyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
@@ -175,7 +175,7 @@
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
+
             if (timeLeft > 0) {
                 timeLeft--;
             } else {

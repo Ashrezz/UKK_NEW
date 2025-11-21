@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Models\Peminjaman;
+use App\Observers\PeminjamanObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Peminjaman observer for priority auto-recalculation
+        Peminjaman::observe(PeminjamanObserver::class);
+
         // Auto-populate missing BLOBs on every request
         // This ensures that any new peminjaman records get placeholder images immediately
         $this->autoPopulateMissingBlobs();

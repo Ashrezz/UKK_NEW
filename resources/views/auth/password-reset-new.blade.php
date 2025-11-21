@@ -47,22 +47,22 @@
                 <!-- Password Form -->
                 <form action="{{ route('password.update') }}" method="POST" class="space-y-4" id="password-form">
                     @csrf
-                    
+
                     <!-- New Password -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class="fas fa-lock mr-1"></i>Password Baru
                         </label>
                         <div class="relative">
-                            <input 
-                                type="password" 
-                                name="password" 
+                            <input
+                                type="password"
+                                name="password"
                                 id="password"
                                 placeholder="Minimal 8 karakter"
                                 class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                 required
                             >
-                            <button 
+                            <button
                                 type="button"
                                 onclick="togglePassword('password')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -89,15 +89,15 @@
                             <i class="fas fa-lock mr-1"></i>Konfirmasi Password
                         </label>
                         <div class="relative">
-                            <input 
-                                type="password" 
-                                name="password_confirmation" 
+                            <input
+                                type="password"
+                                name="password_confirmation"
                                 id="password_confirmation"
                                 placeholder="Masukkan ulang password"
                                 class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                 required
                             >
-                            <button 
+                            <button
                                 type="button"
                                 onclick="togglePassword('password_confirmation')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -130,7 +130,7 @@
                         </ul>
                     </div>
 
-                    <button 
+                    <button
                         type="submit"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2">
                         <i class="fas fa-check"></i>
@@ -145,7 +145,7 @@
         function togglePassword(fieldId) {
             const field = document.getElementById(fieldId);
             const icon = document.getElementById(fieldId + '-icon');
-            
+
             if (field.type === 'password') {
                 field.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -170,47 +170,47 @@
         function checkPasswordStrength() {
             const password = passwordInput.value;
             let strength = 0;
-            
+
             // Check requirements
             const hasLength = password.length >= 8;
             const hasUpper = /[A-Z]/.test(password);
             const hasLower = /[a-z]/.test(password);
             const hasNumber = /[0-9]/.test(password);
-            
+
             // Update requirement indicators
             updateRequirement('req-length', hasLength);
             updateRequirement('req-upper', hasUpper);
             updateRequirement('req-lower', hasLower);
             updateRequirement('req-number', hasNumber);
-            
+
             // Calculate strength
             if (hasLength) strength++;
             if (hasUpper) strength++;
             if (hasLower) strength++;
             if (hasNumber) strength++;
-            
+
             // Update strength bar
             const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
             const texts = ['Lemah', 'Cukup', 'Baik', 'Kuat'];
             const textColors = ['text-red-600', 'text-orange-600', 'text-yellow-600', 'text-green-600'];
-            
+
             strengthBar.className = 'h-full transition-all duration-300 ' + (colors[strength - 1] || '');
             strengthBar.style.width = (strength * 25) + '%';
             strengthText.className = 'text-xs mt-1 ' + (textColors[strength - 1] || '');
             strengthText.textContent = texts[strength - 1] || '';
-            
+
             checkPasswordMatch();
         }
 
         function checkPasswordMatch() {
             const password = passwordInput.value;
             const confirm = confirmInput.value;
-            
+
             if (confirm.length === 0) {
                 matchText.textContent = '';
                 return;
             }
-            
+
             if (password === confirm) {
                 matchText.className = 'text-xs mt-1 text-green-600';
                 matchText.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Password cocok';
@@ -223,7 +223,7 @@
         function updateRequirement(id, met) {
             const element = document.getElementById(id);
             const icon = element.querySelector('i');
-            
+
             if (met) {
                 icon.classList.remove('fa-circle', 'text-gray-400');
                 icon.classList.add('fa-check-circle', 'text-green-500');
