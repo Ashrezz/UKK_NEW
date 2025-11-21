@@ -146,16 +146,18 @@ class DatabaseBackupService
             $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '-' . Str::random(6) . '.sql';
             $size = strlen($sql);
 
+            $uploadResult = null;
             if ($uploadToSupabase) {
                 $supabase = new SupabaseStorageService();
-                $success = $supabase->upload($filename, $sql);
-                \Log::info('Supabase upload', ['filename' => $filename, 'success' => $success]);
+                $uploadResult = $supabase->upload($filename, $sql);
+                \Log::info('Supabase upload', ['filename' => $filename, 'success' => $uploadResult['success'] ?? false]);
             }
 
             return [
                 'filename' => $filename,
                 'size' => $size,
-                'sql_content' => $sql
+                'sql_content' => $sql,
+                'upload' => $uploadResult,
             ];
         } catch (\Throwable $e) {
             \Log::error('Backup generation failed', [

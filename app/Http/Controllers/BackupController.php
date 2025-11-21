@@ -81,6 +81,9 @@ class BackupController extends Controller
             \Log::info('Calling generate with Supabase upload');
             $result = $service->generate(true);
             \Log::info('generate completed', ['size' => $result['size'], 'filename' => $result['filename']]);
+            if (isset($result['upload']) && !$result['upload']['success']) {
+                \Log::warning('Supabase upload failed', $result['upload']);
+            }
 
             if (empty($result['sql_content'])) {
                 throw new \Exception('Backup content is empty');
