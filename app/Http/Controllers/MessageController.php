@@ -65,4 +65,30 @@ class MessageController extends Controller
         
         return redirect()->back();
     }
+    
+    // Reply to message
+    public function reply(Request $request, $id)
+    {
+        // Only admin and petugas can reply
+        if (!in_array(auth()->user()->role, ['admin', 'petugas'])) {
+            abort(403, 'Unauthorized');
+        }
+        
+        $message = Message::findOrFail($id);
+        
+        $request->validate([
+            'reply' => 'required|string|max:5000',
+        ]);
+        
+        $message->update([
+            'reply' => $request->reply,
+            'replied_by' => auth()->id(),
+            'replied_at' => now(),
+            'is_read' => true,
+            'read_by' => auth()->id(),
+            'read_at' => now(),
+        ]);
+        
+        return redirect()->back()->with('success', 'Balasan berhasil dikirim!');
+    }
 }

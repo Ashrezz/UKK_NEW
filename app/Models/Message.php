@@ -16,11 +16,15 @@ class Message extends Model
         'is_read',
         'read_by',
         'read_at',
+        'reply',
+        'replied_by',
+        'replied_at',
     ];
     
     protected $casts = [
         'is_read' => 'boolean',
         'read_at' => 'datetime',
+        'replied_at' => 'datetime',
     ];
     
     public function sender()
@@ -31,5 +35,10 @@ class Message extends Model
     public function reader()
     {
         return $this->belongsTo(User::class, 'read_by');
+    }
+    
+    public function replier()
+    {
+        return $this->belongsTo(User::class, 'replied_by');
     }
 }

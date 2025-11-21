@@ -70,6 +70,7 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     // Messages for admin/petugas
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{id}/read', [MessageController::class, 'markAsRead'])->name('messages.read');
+    Route::post('/messages/{id}/reply', [MessageController::class, 'reply'])->name('messages.reply');
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
     // Laporan peminjaman (admin / petugas)
