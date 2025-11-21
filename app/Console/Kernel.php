@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('peminjaman:cleanup')->dailyAt('00:05');
         // Run backup check hourly to see if it's time to execute scheduled backup
         $schedule->command('app:run-scheduled-backups')->hourly();
+        // Auto cleanup past bookings every hour (checks date and time)
+        $schedule->command('bookings:cleanup')->hourly();
     }
 
     /**
