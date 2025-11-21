@@ -37,6 +37,15 @@ class User extends Authenticatable
 
     public function getPrioritasDiscountPercentAttribute(): int
     {
+        // Prioritaskan diskon dari badge jika ada
+        $badge = (int)($this->badge ?? 0);
+        if ($badge > 0) {
+            // Badge memberikan diskon tambahan: badge 1=5%, badge 2=10%, badge 3=15%
+            $badgeDiscounts = [1 => 5, 2 => 10, 3 => 15];
+            return (int)($badgeDiscounts[$badge] ?? 0);
+        }
+        
+        // Fallback ke diskon berdasarkan prioritas level
         $discounts = config('prioritas.discounts', [0 => 0, 1 => 5, 2 => 15, 3 => 25]);
         $level = (int)($this->prioritas_level ?? 0);
         return (int)($discounts[$level] ?? 0);

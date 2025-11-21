@@ -82,14 +82,14 @@
             </div>
 
             <!-- Priority Badge Display (read-only) -->
-            @if($user->prioritas_level > 0)
-            <div class="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+            <div class="mb-4 p-4 rounded-lg border {{ $user->prioritas_level > 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200' : 'bg-gray-50 border-gray-200' }}">
                 <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-6 h-6 {{ $user->prioritas_level > 0 ? 'text-yellow-600' : 'text-gray-400' }}" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                     <div class="flex-1">
-                        <h4 class="text-sm font-semibold text-gray-800">Status Pelanggan Prioritas</h4>
+                        <h4 class="text-sm font-semibold text-gray-800">Status Pelanggan</h4>
+                        @if($user->prioritas_level > 0)
                         <div class="flex items-center gap-2 mt-1">
                             @if($user->prioritas_level === 1)
                                 <span class="badge" style="background:#dbeafe;color:#1e40af;border:1px solid #3b82f6">🥉 Bronze</span>
@@ -100,12 +100,42 @@
                             @endif
                             <span class="text-sm text-gray-600">Diskon: <strong>{{ $user->prioritas_discount_percent }}%</strong></span>
                         </div>
+                        @else
+                        <p class="text-xs text-gray-500 mt-1">Belum menjadi pelanggan prioritas</p>
+                        @endif
+                        
+                        <!-- Badge Display with Tooltip -->
                         <div class="flex items-center gap-2 mt-2">
-                            @if(($user->badge ?? 0) > 0)
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">
-                                    ⭐ Badge {{ $user->badge }}
+                            @php $userBadge = $user->badge ?? 0; @endphp
+                            @if($userBadge > 0)
+                                <div class="relative inline-block badge-tooltip-container">
+                                    <button type="button" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold cursor-help" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">
+                                        ⭐ Badge {{ $userBadge }}
+                                    </button>
+                                    <div class="badge-tooltip hidden absolute z-10 w-64 p-3 bg-white border border-gray-200 rounded-lg shadow-lg bottom-full left-0 mb-2">
+                                        <div class="text-xs">
+                                            <p class="font-semibold text-gray-800 mb-2">✨ Benefit Badge {{ $userBadge }}:</p>
+                                            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                                                <li>Diskon {{ $user->prioritas_discount_percent }}% untuk setiap peminjaman</li>
+                                                <li>Prioritas lebih tinggi dalam antrian booking</li>
+                                                @if($userBadge >= 2)
+                                                <li>Akses ke ruangan premium</li>
+                                                @endif
+                                                @if($userBadge >= 3)
+                                                <li>Bonus poin loyalty setiap transaksi</li>
+                                                @endif
+                                            </ul>
+                                        </div>
+                                        <div class="absolute top-full left-4 -mt-1">
+                                            <div class="w-2 h-2 bg-white border-r border-b border-gray-200 transform rotate-45"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-500">Pelanggan Prioritas</span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" style="background:#e5e7eb;color:#6b7280;border:1px solid #d1d5db">
+                                    Tidak Ada Badge
                                 </span>
-                                <span class="text-xs text-gray-500">Status Badge Pelanggan Prioritas</span>
                             @endif
                         </div>
                         @if($user->prioritas_since)
@@ -114,7 +144,12 @@
                     </div>
                 </div>
             </div>
-            @endif
+            
+            <style>
+            .badge-tooltip-container:hover .badge-tooltip {
+                display: block;
+            }
+            </style>
 
             <hr class="my-6">
 
