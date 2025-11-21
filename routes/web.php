@@ -37,6 +37,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
     Route::get('/messages/my', [MessageController::class, 'userMessages'])->name('messages.my');
     Route::post('/messages/{id}/confirm', [MessageController::class, 'confirm'])->name('messages.confirm');
+    Route::post('/messages/{id}/user-read', [MessageController::class, 'userMarkAsRead'])->name('messages.user.read');
+    Route::post('/messages/{id}/user-reply', [MessageController::class, 'userReply'])->name('messages.user.reply');
 });
 
 // Peminjaman

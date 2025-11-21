@@ -132,4 +132,48 @@ class MessageController extends Controller
 
         return redirect()->back()->with('success', 'Konfirmasi Anda telah dikirim ke admin!');
     }
+    
+    // User marks admin's reply as read
+    public function userMarkAsRead($id)
+    {
+        $message = Message::findOrFail($id);
+        
+        // Only the message owner can mark as read
+        if ($message->from_user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        $message->update([
+            'is_read' => true,
+            'read_by' => auth()->id(),
+            'read_at' => now(),
+        ]);
+        
+        return redirect()->back()->with('success', 'Pesan telah ditandai sebagai sudah dibaca');
+    }
+    
+    // User reply to admin's message
+    public function userReply(Request $request, $id)
+    {
+        $message = Message::findOrFail($id);
+        
+        // Only the message owner can reply
+        if ($message->from_user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        $request->validate([
+            'user_reply' => 'required|string|max:5000',
+        ]);
+        
+        // Create new message as reply
+        Message::create([
+            'from_user_id' => auth()->id(),
+            'subject' => 'Re: ' . $message->subject,
+            'message' => $request->user_reply,
+            'is_read' => false,
+        ]);
+        
+        return redirect()->back()->with('success', 'Balasan Anda telah dikirim ke admin!');
+    }
 }

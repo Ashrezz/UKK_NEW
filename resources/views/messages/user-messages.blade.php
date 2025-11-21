@@ -68,9 +68,23 @@
                                     </div>
                                     <p class="text-gray-700 whitespace-pre-wrap ml-7">{{ $message->reply }}</p>
                                     <p class="text-xs text-green-600 mt-2 ml-7">{{ $message->replied_at ? $message->replied_at->format('d M Y, H:i') : '' }}</p>
+                                    
+                                    <!-- Mark as Read Button -->
+                                    @if(!$message->is_read)
+                                    <form action="{{ route('messages.user.read', $message->id) }}" method="POST" class="mt-3 ml-7">
+                                        @csrf
+                                        <button type="submit" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                            ✓ Tandai Sudah Dibaca
+                                        </button>
+                                    </form>
+                                    @else
+                                    <p class="text-xs text-gray-500 mt-2 ml-7">
+                                        ✓ Dibaca pada {{ $message->read_at->format('d M Y, H:i') }}
+                                    </p>
+                                    @endif
 
                                     <!-- Confirmation Options (if message contains "Konfirmasi Peminjaman") -->
-                                    @if(str_contains($message->subject, 'Konfirmasi Peminjaman') && !$message->is_read)
+                                    @if(str_contains($message->subject, 'Konfirmasi Peminjaman') && !str_contains($message->message, 'Konfirmasi: Ya') && !str_contains($message->message, 'Konfirmasi: Tidak'))
                                     <div class="mt-4 ml-7 flex gap-2">
                                         <form action="{{ route('messages.confirm', $message->id) }}" method="POST" class="inline">
                                             @csrf
@@ -87,19 +101,28 @@
                                             </button>
                                         </form>
                                     </div>
-                                    @elseif(str_contains($message->subject, 'Konfirmasi Peminjaman') && $message->is_read)
-                                    <div class="mt-4 ml-7">
-                                        <p class="text-sm text-green-700 font-medium">
-                                            ✓ Anda sudah merespons pesan konfirmasi ini
-                                        </p>
-                                        @if($message->reader)
-                                        <p class="text-xs text-gray-600 mt-1">
-                                            Dibaca pada {{ $message->read_at->format('d M Y, H:i') }}
-                                        </p>
-                                        @endif
-                                    </div>
                                     @endif
                                 </div>
+                                
+                                <!-- User Reply to Admin's Reply -->
+                                @if(!str_contains($message->subject, 'Re: Re:'))
+                                <div class="mt-4">
+                                    <button onclick="toggleReplyForm({{ $message->id }})" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                        💬 Balas Pesan Ini
+                                    </button>
+                                    <form id="replyForm{{ $message->id }}" action="{{ route('messages.user.reply', $message->id) }}" method="POST" class="mt-3 hidden">
+                                        @csrf
+                                        <label class="block">
+                                            <span class="text-sm font-medium text-gray-700">Balasan Anda</span>
+                                            <textarea name="user_reply" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="Tulis balasan Anda..." required></textarea>
+                                        </label>
+                                        <div class="flex gap-2 mt-2">
+                                            <button type="submit" class="btn-primary text-sm">Kirim Balasan</button>
+                                            <button type="button" onclick="toggleReplyForm({{ $message->id }})" class="btn-secondary text-sm">Batal</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                @endif
                             </div>
                             @endif
                         </div>
@@ -125,4 +148,13 @@
         @endif
     </div>
 </div>
+
+<script>
+function toggleReplyForm(messageId) {
+    const form = document.getElementById('replyForm' + messageId);
+    if (form) {
+        form.classList.toggle('hidden');
+    }
+}
+</script>
 @endsection
