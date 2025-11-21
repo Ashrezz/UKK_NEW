@@ -20,6 +20,80 @@
             </div>
         </div>
     </div>
+    
+    <!-- Notifications for Admin/Petugas (Right Side) -->
+    @if(auth()->user()->role == 'admin' || auth()->user()->role == 'petugas')
+    @php
+        $unreadNotifications = \App\Models\Notification::where('is_read', false)->orderBy('created_at', 'desc')->take(5)->get();
+        $unreadCount = \App\Models\Notification::where('is_read', false)->count();
+        $unreadMessages = \App\Models\Message::where('is_read', false)->orderBy('created_at', 'desc')->take(5)->get();
+        $unreadMessageCount = \App\Models\Message::where('is_read', false)->count();
+    @endphp
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="lg:col-span-2">
+            <!-- Stats will go here -->
+        </div>
+        <div class="space-y-4">
+            <!-- Notifications Card -->
+            @if($unreadCount > 0)
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-sm">Notifikasi Booking</h3>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                        {{ $unreadCount }}
+                    </span>
+                </div>
+                <div class="space-y-2 max-h-80 overflow-y-auto">
+                    @foreach($unreadNotifications as $notif)
+                    <a href="{{ route('notifications.read', $notif->id) }}" class="block p-3 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-blue-900 truncate">{{ $notif->title }}</p>
+                                <p class="text-xs text-blue-700 mt-0.5 line-clamp-2">{{ $notif->message }}</p>
+                                <p class="text-xs text-blue-600 mt-1">{{ $notif->created_at->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+            
+            <!-- Messages Card -->
+            @if($unreadMessageCount > 0)
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-sm">Pesan dari User</h3>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                        {{ $unreadMessageCount }}
+                    </span>
+                </div>
+                <div class="space-y-2 max-h-80 overflow-y-auto">
+                    @foreach($unreadMessages as $msg)
+                    <a href="{{ route('messages.index') }}" class="block p-3 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 transition-colors">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-green-900 truncate">{{ $msg->sender->name }}</p>
+                                <p class="text-xs text-green-700 mt-0.5 font-medium truncate">{{ $msg->subject }}</p>
+                                <p class="text-xs text-green-600 mt-1">{{ $msg->created_at->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
 
     <!-- Badge Progress Card (for regular users) -->
     @if(auth()->user()->role !== 'admin' && auth()->user()->role !== 'petugas' && $badgeProgress)

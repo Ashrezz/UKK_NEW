@@ -351,6 +351,12 @@ class PeminjamanController extends Controller
 
     public function manage()
     {
+        // Auto cleanup: Hapus booking yang sudah lewat tanggalnya
+        $yesterday = now()->subDay()->format('Y-m-d');
+        Peminjaman::where('tanggal', '<', $yesterday)
+            ->whereIn('status', ['pending', 'disetujui'])
+            ->delete();
+        
         // Fetch regular (non-priority) bookings
         $peminjaman = Peminjaman::with('ruang', 'user')
             ->where('status', '!=', 'disetujui')

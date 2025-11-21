@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Message;
+use Illuminate\Http\Request;
+
+class MessageController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+    
+    // Show form to send message (for regular users)
+    public function create()
+    {
+        return view('messages.create');
+    }
+    
+    // Store message
+    public function store(Request $request)
+    {
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:5000',
+        ]);
+        
+        Message::create([
+            'from_user_id' => auth()->id(),
+            'subject' => $request->subject,
+            'message' => $request->message,
+            'is_read' => false,
+        ]);
+        
+        return redirect()->back()->with('success', 'Pesan berhasil dikirim ke admin!');
+    }
+    
+    // List messages (for admin/petugas)
+    public function index()
+    {
+        $this->authorize('viewAny', Message::class);
+        
+        $messages = Message::with('sender')
+            ->orderBy('is_read', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return view('messages.index', compact('messages'));
+    }
+    
+    // Mark as read
+    public function markAsRead($id)
+    {
+        $message = Message::findOrFail($id);
+        
+        $message->update([
+            'is_read' => true,
+            'read_by' => auth()->id(),
+            'read_at' => now(),
+        ]);
+        
+        return redirect()->back();
+    }
+}

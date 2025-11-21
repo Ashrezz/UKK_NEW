@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\MessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PeminjamanController::class, 'index'])->name('home');
@@ -30,6 +31,10 @@ Route::post('/password/reset/update', [AuthController::class, 'updatePassword'])
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    
+    // Messages
+    Route::get('/messages/create', [MessageController::class, 'create'])->name('messages.create');
+    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
 });
 
 // Peminjaman
@@ -62,6 +67,9 @@ Route::middleware(['auth', 'role:admin,petugas'])->group(function () {
     Route::get('/ruang', [RuangController::class, 'index']);
     // Notifications
     Route::get('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    // Messages for admin/petugas
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{id}/read', [MessageController::class, 'markAsRead'])->name('messages.read');
     // Kelola peminjaman (akses: admin + petugas)
     Route::get('/peminjaman/manage', [PeminjamanController::class, 'manage'])->name('peminjaman.manage');
     // Laporan peminjaman (admin / petugas)

@@ -24,8 +24,8 @@ class NotificationController extends Controller
             'read_at' => now(),
         ]);
         
-        // Redirect to jadwal with notification ID to highlight the booking
-        return redirect()->route('peminjaman.jadwal', ['notif' => $notification->peminjaman_id])
+        // Redirect to kelola peminjaman with notification ID to highlight the booking
+        return redirect()->route('peminjaman.manage', ['notif' => $notification->peminjaman_id])
             ->with('notif_booking_id', $notification->peminjaman_id);
     }
 }
