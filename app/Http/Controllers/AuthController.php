@@ -177,4 +177,156 @@ class AuthController extends Controller
         Auth::logout();
         return redirect()->route('login');
     }
+
+    // ==================== Password Reset Methods ====================
+
+    /**
+     * Show password reset request form
+     */
+    public function resetRequestForm()
+    {
+        return view('auth.password-reset-request');
+    }
+
+    /**
+     * Send verification code to email
+     */
+    public function sendResetCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ], [
+            'email.exists' => 'Email tidak terdaftar dalam sistem',
+        ]);
+
+        $email = $request->email;
+
+        // Generate 6-digit verification code
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Store code in database (expires in 15 minutes)
+        \DB::table('password_reset_tokens')->insert([
+            'email' => $email,
+            'token' => $code,
+            'expires_at' => now()->addMinutes(15),
+            'used' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Send email with verification code
+        try {
+            \Mail::raw("Kode verifikasi reset password Anda adalah: {$code}\n\nKode ini berlaku selama 15 menit.", function ($message) use ($email) {
+                $message->to($email)
+                    ->subject('Kode Verifikasi Reset Password');
+            });
+
+            // Store email in session for next step
+            session(['reset_email' => $email]);
+
+            return redirect()->route('password.verify')->with('success', 'Kode verifikasi telah dikirim ke email Anda');
+        } catch (\Exception $e) {
+            \Log::error('Failed to send reset code email', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Gagal mengirim email. Silakan coba lagi atau hubungi admin via WhatsApp.');
+        }
+    }
+
+    /**
+     * Show verification code form
+     */
+    public function verifyCodeForm()
+    {
+        if (!session('reset_email')) {
+            return redirect()->route('password.request')->with('error', 'Silakan masukkan email terlebih dahulu');
+        }
+
+        return view('auth.password-verify-code');
+    }
+
+    /**
+     * Verify the code
+     */
+    public function verifyCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        $email = session('reset_email');
+        if (!$email) {
+            return redirect()->route('password.request')->with('error', 'Sesi expired. Silakan mulai dari awal.');
+        }
+
+        // Check if code is valid
+        $token = \DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->where('token', $request->code)
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$token) {
+            return back()->with('error', 'Kode verifikasi salah atau sudah kadaluarsa');
+        }
+
+        // Store verified token in session
+        session(['verified_token_id' => $token->id]);
+
+        return redirect()->route('password.reset.new')->with('success', 'Kode verifikasi berhasil. Silakan masukkan password baru.');
+    }
+
+    /**
+     * Show new password form
+     */
+    public function newPasswordForm()
+    {
+        if (!session('verified_token_id')) {
+            return redirect()->route('password.request')->with('error', 'Verifikasi diperlukan');
+        }
+
+        return view('auth.password-reset-new');
+    }
+
+    /**
+     * Update password
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|min:8|confirmed',
+        ], [
+            'password.min' => 'Password harus minimal 8 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+        ]);
+
+        $tokenId = session('verified_token_id');
+        if (!$tokenId) {
+            return redirect()->route('password.request')->with('error', 'Sesi expired. Silakan mulai dari awal.');
+        }
+
+        // Get token info
+        $token = \DB::table('password_reset_tokens')->where('id', $tokenId)->first();
+        if (!$token || $token->used) {
+            return redirect()->route('password.request')->with('error', 'Token tidak valid');
+        }
+
+        // Update user password
+        $user = User::where('email', $token->email)->first();
+        if (!$user) {
+            return redirect()->route('password.request')->with('error', 'User tidak ditemukan');
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Mark token as used
+        \DB::table('password_reset_tokens')
+            ->where('id', $tokenId)
+            ->update(['used' => true, 'updated_at' => now()]);
+
+        // Clear session
+        session()->forget(['reset_email', 'verified_token_id']);
+
+        return redirect()->route('login')->with('success', 'Password berhasil direset. Silakan login dengan password baru.');
+    }
 }

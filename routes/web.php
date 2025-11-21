@@ -17,6 +17,14 @@ Route::get('/register', [AuthController::class, 'registerForm']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Password Reset Routes
+Route::get('/password/reset', [AuthController::class, 'resetRequestForm'])->name('password.request');
+Route::post('/password/reset/send-code', [AuthController::class, 'sendResetCode'])->name('password.send-code');
+Route::get('/password/verify', [AuthController::class, 'verifyCodeForm'])->name('password.verify');
+Route::post('/password/verify', [AuthController::class, 'verifyCode'])->name('password.verify.post');
+Route::get('/password/reset/new', [AuthController::class, 'newPasswordForm'])->name('password.reset.new');
+Route::post('/password/reset/update', [AuthController::class, 'updatePassword'])->name('password.update');
+
 // Profile Management (All authenticated users)
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
