@@ -39,9 +39,12 @@ class MessageController extends Controller
     // List messages (for admin/petugas)
     public function index()
     {
-        $this->authorize('viewAny', Message::class);
+        // Only admin and petugas can access
+        if (!in_array(auth()->user()->role, ['admin', 'petugas'])) {
+            abort(403, 'Unauthorized');
+        }
         
-        $messages = Message::with('sender')
+        $messages = Message::with('sender', 'reader')
             ->orderBy('is_read', 'asc')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
