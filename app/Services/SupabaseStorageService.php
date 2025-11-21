@@ -24,17 +24,20 @@ class SupabaseStorageService
             'Authorization' => 'Bearer ' . $this->serviceKey,
             'apikey' => $this->serviceKey,
             'Content-Type' => 'application/octet-stream',
-        ])->post($endpoint, $content);
+        ])->withBody($content, 'application/octet-stream')->post($endpoint);
+
+        $rawBody = $response->body();
+        $decoded = json_decode($rawBody, true);
 
         \Log::info('Supabase upload response', [
             'status' => $response->status(),
-            'body' => $response->body()
+            'body' => $decoded ?? $rawBody
         ]);
 
         return [
             'success' => $response->successful(),
             'status' => $response->status(),
-            'body' => $response->json()
+            'body' => $decoded ?? $rawBody
         ];
     }
 
