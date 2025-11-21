@@ -35,12 +35,21 @@
             </a>
         </div>
         <div class="card p-6">
-            <h2 class="text-lg font-medium mb-4">Informasi</h2>
+            <h2 class="text-lg font-medium mb-4">Backup di Supabase</h2>
             <div class="space-y-3 text-sm text-black/70">
-                <p>✅ Backup database akan langsung didownload ke komputer Anda</p>
-                <p>✅ Tidak disimpan di server (Railway-friendly)</p>
-                <p>⚠️ Simpan file backup di tempat aman (Google Drive, Dropbox, dll)</p>
-                <p>📁 Gunakan menu "Restore dari File" untuk mengembalikan database dari backup</p>
+                <p>Daftar file backup yang tersimpan di Supabase bucket <b>UKK</b>:</p>
+                <ul class="list-disc ml-4">
+                @if(!empty($files))
+                    @foreach($files as $file)
+                        <li>
+                            {{ $file['name'] ?? $file['id'] ?? 'file' }}
+                            <a href="{{ app('App\\Services\\SupabaseStorageService')->getDownloadUrl($file['name']) }}" target="_blank" class="text-blue-600 hover:underline ml-2">Download</a>
+                        </li>
+                    @endforeach
+                @else
+                    <li><i>Tidak ada file backup di Supabase.</i></li>
+                @endif
+                </ul>
             </div>
         </div>
     </div>

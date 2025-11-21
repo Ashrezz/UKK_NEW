@@ -50,7 +50,7 @@ class AdminUserController extends Controller
     public function edit($id)
     {
         $user = User::findOrFail($id);
-        
+
         // Prevent editing admin account
         if ($user->role === 'admin' && auth()->id() !== $user->id) {
             return redirect()->route('admin.users.index')->with('error', 'Tidak dapat mengedit akun admin lain!');

@@ -13,7 +13,9 @@ class BackupController extends Controller
     public function index()
     {
         try {
-            return view('admin.backups.index');
+            $supabase = new \App\Services\SupabaseStorageService();
+            $files = $supabase->listFiles();
+            return view('admin.backups.index', compact('files'));
         } catch (\Exception $e) {
             \Log::error('Backup index error: ' . $e->getMessage());
             return view('admin.backups.index');
@@ -75,25 +77,21 @@ class BackupController extends Controller
             ini_set('memory_limit', '512M');
             \Log::info('Limits set');
 
-            // Generate SQL backup in memory
-            \Log::info('Calling generateAndDownload');
-            $sqlContent = $service->generateAndDownload();
-            \Log::info('generateAndDownload completed', ['size' => strlen($sqlContent)]);
+            // Generate SQL backup and upload to Supabase
+            \Log::info('Calling generate with Supabase upload');
+            $result = $service->generate(true);
+            \Log::info('generate completed', ['size' => $result['size'], 'filename' => $result['filename']]);
 
-            if (empty($sqlContent)) {
+            if (empty($result['sql_content'])) {
                 throw new \Exception('Backup content is empty');
             }
 
-            $filename = 'backup-' . Carbon::now()->format('Ymd-His') . '.sql';
-            \Log::info('Filename generated', ['filename' => $filename]);
-
             // Stream download langsung tanpa save
-            \Log::info('Returning stream download');
-            return response()->streamDownload(function() use ($sqlContent) {
-                echo $sqlContent;
-            }, $filename, [
+            return response()->streamDownload(function() use ($result) {
+                echo $result['sql_content'];
+            }, $result['filename'], [
                 'Content-Type' => 'application/sql',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="' . $result['filename'] . '"',
             ]);
         } catch (\Throwable $e) {
             \Log::error('=== BACKUP MANUAL FAILED ===', [
