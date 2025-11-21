@@ -168,4 +168,86 @@ class DatabaseBackupService
             ]);
             throw $e;
         }
+    }
+
+    public function restore(string $filename): int
+    {
+        $path = storage_path('app/backups/' . $filename);
+        if (!file_exists($path)) {
+            throw new \Exception('Backup file not found: ' . $filename);
+        }
+
+        $sql = file_get_contents($path);
+        if ($sql === false || strlen($sql) < 10) {
+            throw new \Exception('Backup file is empty or unreadable');
+        }
+
+        $connection = DB::connection();
+        $pdo = $connection->getPdo();
+        $statements = [];
+        $buffer = '';
+        $inString = false;
+        $stringChar = '';
+
+        // Simple SQL splitter that tries to respect quotes
+        $length = strlen($sql);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+            $nextChar = $i + 1 < $length ? $sql[$i + 1] : '';
+
+            if ($inString) {
+                if ($char === $stringChar) {
+                    // Check escaped quote
+                    $escaped = $buffer !== '' && substr($buffer, -1) === '\\';
+                    if (!$escaped) {
+                        $inString = false;
+                        $stringChar = '';
+                    }
+                }
+                $buffer .= $char;
+                continue;
+            } else {
+                if ($char === '\'' || $char === '"') {
+                    $inString = true;
+                    $stringChar = $char;
+                    $buffer .= $char;
+                    continue;
+                }
+            }
+
+            // Handle comment lines starting with --
+            if ($char === '-' && $nextChar === '-' ) {
+                // Skip until end of line
+                while ($i < $length && $sql[$i] !== "\n") { $buffer .= $sql[$i]; $i++; }
+                continue;
+            }
+
+            if ($char === ';') {
+                $trimmed = trim($buffer);
+                if ($trimmed !== '' && !str_starts_with($trimmed, '--')) {
+                    $statements[] = $trimmed;
+                }
+                $buffer = '';
+            } else {
+                $buffer .= $char;
+            }
+        }
+
+        $pdo->beginTransaction();
+        $count = 0;
+        try {
+            foreach ($statements as $stmt) {
+                try {
+                    $pdo->exec($stmt);
+                    $count++;
+                } catch (\Throwable $e) {
+                    \Log::warning('Restore statement failed', ['error' => $e->getMessage(), 'statement' => substr($stmt, 0, 200)]);
+                }
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw new \Exception('Restore failed: ' . $e->getMessage());
+        }
+        return $count;
 
